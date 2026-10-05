@@ -2,6 +2,7 @@ import AppKit
 import Observation
 import SwiftData
 import SwiftUI
+import WidgetKit
 
 enum SidebarSection: Hashable {
     case today
@@ -77,6 +78,8 @@ final class AppModel {
     }
 
     @ObservationIgnored private var timer: Timer?
+    @ObservationIgnored private var widgetWork: DispatchWorkItem?
+    @ObservationIgnored private var lastWidgetSnapshot: WidgetSnapshot?
     @ObservationIgnored private var activeObserver: NSObjectProtocol?
 
     init() {
@@ -114,6 +117,7 @@ final class AppModel {
         HotKeyService.shared.register(HotKey.saved)
         applyAppearance()
         resumeFocus()
+        writeWidgetSnapshot()
         #if DEBUG
         let snapshotting = ProcessInfo.processInfo.environment["TOP3_SNAPSHOT_DIR"] != nil
         #else
@@ -599,8 +603,28 @@ final class AppModel {
         return (pins.filter(\.isCompleted).count, pins.count)
     }
 
-    /// Hook for work after every save (widget snapshot).
-    func didSave() {}
+    /// After every save: refresh the desktop widget's snapshot (coalesced).
+    func didSave() {
+        widgetWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.writeWidgetSnapshot() }
+        widgetWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: work)
+    }
+
+    func writeWidgetSnapshot() {
+        let pins = allTasks().filter { $0.topSlot != nil }
+        let snapshot = WidgetSnapshot(updated: Date(), day: today,
+                                      items: pins.map { .init(slot: $0.topSlot ?? 0, title: $0.title, done: $0.isCompleted) }
+                                          .sorted { $0.slot < $1.slot })
+        #if DEBUG
+        // Screenshot runs use a throwaway store; don't overwrite the real widget file.
+        if ProcessInfo.processInfo.environment["TOP3_STORE_PATH"] != nil { return }
+        #endif
+        guard snapshot.items != lastWidgetSnapshot?.items || snapshot.day != lastWidgetSnapshot?.day else { return }
+        lastWidgetSnapshot = snapshot
+        snapshot.write()
+        WidgetCenter.shared.reloadAllTimelines()
+    }
 
     #if DEBUG
     /// Renders the main window for each section to PNG files, then quits. Needs no screen-recording permission.

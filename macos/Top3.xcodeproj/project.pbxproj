@@ -21,31 +21,39 @@
 		2F0EED5CDE23233A018F8FE2 /* AppModel+Rhythm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19416EBFD505EDD1ABF664CF /* AppModel+Rhythm.swift */; };
 		2F25F16E60AB2F25C05982EB /* ParkingLotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62DD1F32C7B7EFF0371CFA30 /* ParkingLotView.swift */; };
 		30894B13879B7495581270CD /* TaskSorting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFA3F51BEAFA7017DC57E81 /* TaskSorting.swift */; };
+		3718D439F131D80016D11E94 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7D4ABB3B8650750696EDC0 /* WidgetSnapshot.swift */; };
 		37F13A6399FBFC2708D599A3 /* MenuBarQuickAdd.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EBDBFA3A937B6AEDB31382F /* MenuBarQuickAdd.swift */; };
 		3E876D6D20042D2E6AB7DA64 /* CalendarViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372CB38E939A60BD0217F899 /* CalendarViews.swift */; };
 		429F481042823DCB370A117C /* Fuzzy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 935598E085DB4D0F2E72DA29 /* Fuzzy.swift */; };
 		43F547C2D5986CE53AB2CD48 /* TaskSortingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD855ED1ABA21B3191780F7C /* TaskSortingTests.swift */; };
 		447FF1474E2ED2456A63A9C9 /* Rollover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3810521CD447F0D213DE613E /* Rollover.swift */; };
 		453DB84026271376429E4B71 /* TaskColumn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63CC9D51A8DE495D8A560E87 /* TaskColumn.swift */; };
+		455C6FFE9FCBC3568525EB6C /* ProTaskWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = B390F7FAB91B41B6ED7A1EB6 /* ProTaskWidget.swift */; };
 		4988E760F4CFA9C1685A071D /* Rollover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3810521CD447F0D213DE613E /* Rollover.swift */; };
 		4B1AFB7EAD1A251D52086FBE /* WrapUpView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E07214773BA7C0E693F37B /* WrapUpView.swift */; };
 		50A53D8970BB34A52331B3C0 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3179DEE590E0C1215405F4D0 /* TodayView.swift */; };
 		5147BC821753F4E1374D98ED /* DoneView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED5BC245FB055764199EAB1C /* DoneView.swift */; };
 		521337CBAFD905E7AAE56F77 /* AppModel+Palette.swift in Sources */ = {isa = PBXBuildFile; fileRef = 703DB97F6EF6C79B6C91DEA9 /* AppModel+Palette.swift */; };
 		53336857F1E130D502090322 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A1A8B56628621F1101DD20A /* NotificationService.swift */; };
+		551C22AAC25C96A53A337DA8 /* ProTaskWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B1F8A3643DF9F0DA1DA9FA4C /* ProTaskWidget.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		56780D513D0C3F7C9EA0B43F /* Top3PlannerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74B40DBBC06C07FB2F1F5DE4 /* Top3PlannerTests.swift */; };
+		57000B106EFA555D08A8C48C /* ColorTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A7A32528837DFF398BF4DA /* ColorTokens.swift */; };
 		590CE575820B70028C2C859D /* Top3App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 868C737DD6ACB95605FAEC7B /* Top3App.swift */; };
+		5BCD4BC0C680AFB093A8DCAA /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D7D4ABB3B8650750696EDC0 /* WidgetSnapshot.swift */; };
 		5E89A5F5D9C63C573786E60C /* TaskParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F91036D02BE53542E40C500 /* TaskParser.swift */; };
 		5E94454FB3A13A46109F29D2 /* HotKeyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92F6DE29BD9D40D5F3377682 /* HotKeyService.swift */; };
 		617C16AF22D34CEDAE3ADF53 /* TaskRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96C4D4AAAF0AC4CC43A0CA9E /* TaskRow.swift */; };
+		624CF45C9AFACEFE19EFBC91 /* ColorTokens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91A7A32528837DFF398BF4DA /* ColorTokens.swift */; };
 		632C8CF7236741C103BDE20C /* Inter-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F83350B61CB921A518ECE286 /* Inter-Medium.ttf */; };
 		66AC1EC96B6445B86070383D /* FocusViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDECFD0658108A0C8A8B908D /* FocusViews.swift */; };
 		6700D3513B36DD0438DC6890 /* Recurrence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15F100993BE89CA134E96761 /* Recurrence.swift */; };
+		69F7648456C19063EE60C802 /* Inter-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 2BF6B8A15B3234774A67D888 /* Inter-LICENSE.txt */; };
 		6D3D60C071AB5424418E560F /* ListScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5701A6422C6C8DD7B3866F16 /* ListScreen.swift */; };
 		70FD414BB06F43719A26E6EC /* DailyStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAA84232A6F6CADCA08B610 /* DailyStats.swift */; };
 		743CD7B4088AE6FB39097A5D /* DayKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142EDF6C71EE21D86954EE7D /* DayKey.swift */; };
 		81DB1AA9A55FD049DA40D531 /* TaskSorting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFA3F51BEAFA7017DC57E81 /* TaskSorting.swift */; };
 		869F42336EC34A144A497F44 /* QuickCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BA31C9937FEE2C44F9CF1B /* QuickCapture.swift */; };
+		8AA2AD06671463877BBE3542 /* Inter-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 83AAB60830FC78A07D27437F /* Inter-SemiBold.ttf */; };
 		8B15A67442413FDE67D594D0 /* Kinds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 863ADE93215C9182ED365546 /* Kinds.swift */; };
 		927C392780A9F9FA5B2F095C /* WeeklyStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77476DF1AC8401DF54640973 /* WeeklyStats.swift */; };
 		96B0A4270E4352A90D119521 /* AppModel+Waiting.swift in Sources */ = {isa = PBXBuildFile; fileRef = F57BCA430673FA1B07730160 /* AppModel+Waiting.swift */; };
@@ -68,17 +76,44 @@
 		D0D794967F39FEABD0005B19 /* DailyStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AAA84232A6F6CADCA08B610 /* DailyStats.swift */; };
 		D14D8DA817BA01FE0B83A1BD /* CalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2FAE230C927133751DCD11 /* CalendarService.swift */; };
 		D25C0CA5C6808D284E65E0FB /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12E3932F6E473346AEFE460 /* AppModel.swift */; };
+		D5A8F803CF865AB72481715B /* Inter-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6F8ACF16BE83B938C3899CA4 /* Inter-Regular.ttf */; };
+		E01ED477BD6AB009F6E1E038 /* Inter-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F83350B61CB921A518ECE286 /* Inter-Medium.ttf */; };
 		E275B6075D6EDAA7008AE803 /* Recurrence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15F100993BE89CA134E96761 /* Recurrence.swift */; };
 		E3E36F5582C6265A3256067E /* CaptureRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9DC116F8CC2F0A7DE73643 /* CaptureRouting.swift */; };
 		E5839E7CEDC62113AF9B6182 /* CaptureRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9DC116F8CC2F0A7DE73643 /* CaptureRouting.swift */; };
 		EBB77B21139E35FFE1225830 /* DayAndCalendarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76487C84E9429DE2B94AC26B /* DayAndCalendarTests.swift */; };
 		ED8EACB5CBB93C04339C75D0 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88439F5841D8876EB49DCEC8 /* Components.swift */; };
 		F00ECAC8ED5A3F5D19E34353 /* Top3Planner.swift in Sources */ = {isa = PBXBuildFile; fileRef = FBD3604914003438677C4322 /* Top3Planner.swift */; };
+		F074E8CD6CF70441F5AD18FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3407B071D124B29861AE7873 /* Assets.xcassets */; };
 		F27944B5D78B9ED3C80169A3 /* DayKey.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142EDF6C71EE21D86954EE7D /* DayKey.swift */; };
 		F544499F523CB3DE06169D5D /* WeeklyStatsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE80889841D04322683B5CAF /* WeeklyStatsTests.swift */; };
 		F8B4B8A04A1EB880F4FE8DC2 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D52DDB31088A0588AB11F0 /* Models.swift */; };
 		FDC53597AF3767FD65747E81 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50495CA6B1CE425EF84D49DA /* Theme.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		268DC47D1A58FAD853890AEA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 60094705085C4E9373019FDB /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 41A6AD48D5B7493CD55C1548;
+			remoteInfo = ProTaskWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		6FBD0B1BD40EE72DC722B1F2 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				551C22AAC25C96A53A337DA8 /* ProTaskWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0059350337EFCC08F20D6A9C /* TaskEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskEditor.swift; sourceTree = "<group>"; };
@@ -99,7 +134,9 @@
 		372CB38E939A60BD0217F899 /* CalendarViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarViews.swift; sourceTree = "<group>"; };
 		3810521CD447F0D213DE613E /* Rollover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rollover.swift; sourceTree = "<group>"; };
 		50495CA6B1CE425EF84D49DA /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		54613AE1002D62FA0ADFDCC4 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5701A6422C6C8DD7B3866F16 /* ListScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListScreen.swift; sourceTree = "<group>"; };
+		5D7D4ABB3B8650750696EDC0 /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 		5EBDBFA3A937B6AEDB31382F /* MenuBarQuickAdd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarQuickAdd.swift; sourceTree = "<group>"; };
 		62DD1F32C7B7EFF0371CFA30 /* ParkingLotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParkingLotView.swift; sourceTree = "<group>"; };
 		63CC9D51A8DE495D8A560E87 /* TaskColumn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskColumn.swift; sourceTree = "<group>"; };
@@ -108,6 +145,7 @@
 		6F8ACF16BE83B938C3899CA4 /* Inter-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Regular.ttf"; sourceTree = "<group>"; };
 		6FCF98A195B66C2135DBEDA4 /* RolloverTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RolloverTests.swift; sourceTree = "<group>"; };
 		703DB97F6EF6C79B6C91DEA9 /* AppModel+Palette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Palette.swift"; sourceTree = "<group>"; };
+		71915475AFE312FF179E8656 /* ProTaskWidget.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ProTaskWidget.entitlements; sourceTree = "<group>"; };
 		74B40DBBC06C07FB2F1F5DE4 /* Top3PlannerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Top3PlannerTests.swift; sourceTree = "<group>"; };
 		76487C84E9429DE2B94AC26B /* DayAndCalendarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayAndCalendarTests.swift; sourceTree = "<group>"; };
 		77476DF1AC8401DF54640973 /* WeeklyStats.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyStats.swift; sourceTree = "<group>"; };
@@ -116,6 +154,7 @@
 		868C737DD6ACB95605FAEC7B /* Top3App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Top3App.swift; sourceTree = "<group>"; };
 		88439F5841D8876EB49DCEC8 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		9050594BB382F982B32C73E2 /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
+		91A7A32528837DFF398BF4DA /* ColorTokens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorTokens.swift; sourceTree = "<group>"; };
 		92F6DE29BD9D40D5F3377682 /* HotKeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyService.swift; sourceTree = "<group>"; };
 		935598E085DB4D0F2E72DA29 /* Fuzzy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fuzzy.swift; sourceTree = "<group>"; };
 		96C4D4AAAF0AC4CC43A0CA9E /* TaskRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRow.swift; sourceTree = "<group>"; };
@@ -123,7 +162,9 @@
 		9FFA3F51BEAFA7017DC57E81 /* TaskSorting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskSorting.swift; sourceTree = "<group>"; };
 		A1630C17BBE54613F434270E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A3F24C9984A91AA705CD2276 /* TaskParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskParserTests.swift; sourceTree = "<group>"; };
+		B1F8A3643DF9F0DA1DA9FA4C /* ProTaskWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ProTaskWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		B31F4076F12952256EAE76C7 /* Icon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Icon.swift; sourceTree = "<group>"; };
+		B390F7FAB91B41B6ED7A1EB6 /* ProTaskWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProTaskWidget.swift; sourceTree = "<group>"; };
 		C0BA31C9937FEE2C44F9CF1B /* QuickCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickCapture.swift; sourceTree = "<group>"; };
 		C12E3932F6E473346AEFE460 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		C6CC46F82BA6F89B492EB0B8 /* SmartTaskField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmartTaskField.swift; sourceTree = "<group>"; };
@@ -183,6 +224,15 @@
 			path = Views;
 			sourceTree = "<group>";
 		};
+		4B7B6589E517D0ADD576EA16 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				91A7A32528837DFF398BF4DA /* ColorTokens.swift */,
+				5D7D4ABB3B8650750696EDC0 /* WidgetSnapshot.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		5A0ADCA3D41178BF95F59154 /* Services */ = {
 			isa = PBXGroup;
 			children = (
@@ -224,6 +274,7 @@
 				69DA31CC31FDCC0418DA539E /* Model */,
 				5C1945F340C3C31F59FA5960 /* Resources */,
 				5A0ADCA3D41178BF95F59154 /* Services */,
+				4B7B6589E517D0ADD576EA16 /* Shared */,
 				11B7885EDEBF4A3E77D57F70 /* Views */,
 			);
 			path = Top3;
@@ -249,6 +300,16 @@
 			path = Logic;
 			sourceTree = "<group>";
 		};
+		94EDE012791A4BE405658CD0 /* Widget */ = {
+			isa = PBXGroup;
+			children = (
+				54613AE1002D62FA0ADFDCC4 /* Info.plist */,
+				71915475AFE312FF179E8656 /* ProTaskWidget.entitlements */,
+				B390F7FAB91B41B6ED7A1EB6 /* ProTaskWidget.swift */,
+			);
+			path = Widget;
+			sourceTree = "<group>";
+		};
 		BE38A2B62E59D41FFA2864EE /* Top3Tests */ = {
 			isa = PBXGroup;
 			children = (
@@ -268,6 +329,7 @@
 			children = (
 				7C878628235D1A4AC5FBFB37 /* Top3 */,
 				BE38A2B62E59D41FFA2864EE /* Top3Tests */,
+				94EDE012791A4BE405658CD0 /* Widget */,
 				CCB61FBCF88A4343712E3153 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -275,6 +337,7 @@
 		CCB61FBCF88A4343712E3153 /* Products */ = {
 			isa = PBXGroup;
 			children = (
+				B1F8A3643DF9F0DA1DA9FA4C /* ProTaskWidget.appex */,
 				FD47AF1A41A7BF8A64CC18AC /* Top3.app */,
 				26EAFB1F16663F66F8D97BAE /* Top3Tests.xctest */,
 			);
@@ -295,6 +358,24 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		41A6AD48D5B7493CD55C1548 /* ProTaskWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 140A9C15FC3A51E3B7D6D573 /* Build configuration list for PBXNativeTarget "ProTaskWidget" */;
+			buildPhases = (
+				E4EC9A87B26A024883EAB60F /* Sources */,
+				740DB46E7AC3783E79FBC781 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ProTaskWidget;
+			packageProductDependencies = (
+			);
+			productName = ProTaskWidget;
+			productReference = B1F8A3643DF9F0DA1DA9FA4C /* ProTaskWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		7BECFBDBF208A7607D6B0FA6 /* Top3Tests */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 1BD472FEEAF076DEC24A9495 /* Build configuration list for PBXNativeTarget "Top3Tests" */;
@@ -318,10 +399,12 @@
 			buildPhases = (
 				BF1845A9BB83940A1CB46052 /* Sources */,
 				0B5E798CB272AF52673E3971 /* Resources */,
+				6FBD0B1BD40EE72DC722B1F2 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AA60D4E984FB423DA601BD8A /* PBXTargetDependency */,
 			);
 			name = Top3;
 			packageProductDependencies = (
@@ -339,6 +422,10 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					41A6AD48D5B7493CD55C1548 = {
+						DevelopmentTeam = "";
+						ProvisioningStyle = Manual;
+					};
 					7BECFBDBF208A7607D6B0FA6 = {
 						DevelopmentTeam = "";
 						ProvisioningStyle = Manual;
@@ -364,6 +451,7 @@
 			projectRoot = "";
 			targets = (
 				98F5BB78BD2C6545E2EADAD6 /* Top3 */,
+				41A6AD48D5B7493CD55C1548 /* ProTaskWidget */,
 				7BECFBDBF208A7607D6B0FA6 /* Top3Tests */,
 			);
 		};
@@ -379,6 +467,18 @@
 				632C8CF7236741C103BDE20C /* Inter-Medium.ttf in Resources */,
 				ADC18DFE0A5C2CE97EF92F93 /* Inter-Regular.ttf in Resources */,
 				1C9FE95244D1491FA5751707 /* Inter-SemiBold.ttf in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		740DB46E7AC3783E79FBC781 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F074E8CD6CF70441F5AD18FA /* Assets.xcassets in Resources */,
+				69F7648456C19063EE60C802 /* Inter-LICENSE.txt in Resources */,
+				E01ED477BD6AB009F6E1E038 /* Inter-Medium.ttf in Resources */,
+				D5A8F803CF865AB72481715B /* Inter-Regular.ttf in Resources */,
+				8AA2AD06671463877BBE3542 /* Inter-SemiBold.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -424,6 +524,7 @@
 				D14D8DA817BA01FE0B83A1BD /* CalendarService.swift in Sources */,
 				3E876D6D20042D2E6AB7DA64 /* CalendarViews.swift in Sources */,
 				E3E36F5582C6265A3256067E /* CaptureRouting.swift in Sources */,
+				57000B106EFA555D08A8C48C /* ColorTokens.swift in Sources */,
 				A31DA23FDDBA5E3260E9CD0D /* CommandPalette.swift in Sources */,
 				AF48B2649404A14E2306D6A3 /* Commands.swift in Sources */,
 				ED8EACB5CBB93C04339C75D0 /* Components.swift in Sources */,
@@ -461,11 +562,30 @@
 				590CE575820B70028C2C859D /* Top3App.swift in Sources */,
 				AF98E966623D3F8F6CE26354 /* Top3Planner.swift in Sources */,
 				A35D68D0261A6B6A44B0D692 /* WeeklyStats.swift in Sources */,
+				3718D439F131D80016D11E94 /* WidgetSnapshot.swift in Sources */,
 				4B1AFB7EAD1A251D52086FBE /* WrapUpView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E4EC9A87B26A024883EAB60F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				624CF45C9AFACEFE19EFBC91 /* ColorTokens.swift in Sources */,
+				455C6FFE9FCBC3568525EB6C /* ProTaskWidget.swift in Sources */,
+				5BCD4BC0C680AFB093A8DCAA /* WidgetSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		AA60D4E984FB423DA601BD8A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 41A6AD48D5B7493CD55C1548 /* ProTaskWidget */;
+			targetProxy = 268DC47D1A58FAD853890AEA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		06E5A3AD7906A60DBF53C812 /* Debug */ = {
@@ -533,6 +653,46 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		603079108B6CE60B9EA05367 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = Widget/ProTaskWidget.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = Widget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.anmolbhatt.top3.widget;
+				PRODUCT_NAME = ProTaskWidget;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		6AE985FD80C0DB9F93B4A606 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = Widget/ProTaskWidget.entitlements;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				INFOPLIST_FILE = Widget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.anmolbhatt.top3.widget;
+				PRODUCT_NAME = ProTaskWidget;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
 			};
 			name = Debug;
 		};
@@ -670,6 +830,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		140A9C15FC3A51E3B7D6D573 /* Build configuration list for PBXNativeTarget "ProTaskWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6AE985FD80C0DB9F93B4A606 /* Debug */,
+				603079108B6CE60B9EA05367 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		1BD472FEEAF076DEC24A9495 /* Build configuration list for PBXNativeTarget "Top3Tests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

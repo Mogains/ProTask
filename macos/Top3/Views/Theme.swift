@@ -12,16 +12,16 @@ enum Theme {
     // MARK: Color
 
     enum Palette {
-        static let background = Color(nsColor: .dynamic(light: 0xFFFFFF, dark: 0x0F0F10))
-        static let surface = Color(nsColor: .dynamic(light: 0xF7F7F8, dark: 0x151517))
-        static let elevated = Color(nsColor: .dynamic(light: 0xEFEFF1, dark: 0x1B1B1E))
-        static let border = Color(nsColor: .dynamic(light: 0xE4E4E7, dark: 0x26262A))
-        static let text = Color(nsColor: .dynamic(light: 0x18181B, dark: 0xE6E6E8))
-        static let textSecondary = Color(nsColor: .dynamic(light: 0x71717A, dark: 0x8A8A90))
-        static let textTertiary = Color(nsColor: .dynamic(light: 0xA1A1AA, dark: 0x5A5A60))
+        static let background = Color(nsColor: ColorTokens.color(ColorTokens.background))
+        static let surface = Color(nsColor: ColorTokens.color(ColorTokens.surface))
+        static let elevated = Color(nsColor: ColorTokens.color(ColorTokens.elevated))
+        static let border = Color(nsColor: ColorTokens.color(ColorTokens.border))
+        static let text = Color(nsColor: ColorTokens.color(ColorTokens.text))
+        static let textSecondary = Color(nsColor: ColorTokens.color(ColorTokens.textSecondary))
+        static let textTertiary = Color(nsColor: ColorTokens.color(ColorTokens.textTertiary))
         /// The single muted accent: checkbox fill, active indicator, drop targets.
-        static let accent = Color(nsColor: .dynamic(light: 0x5B6283, dark: 0x8C93B5))
-        static let accentForeground = Color(nsColor: .dynamic(light: 0xFFFFFF, dark: 0x0F0F10))
+        static let accent = Color(nsColor: ColorTokens.color(ColorTokens.accent))
+        static let accentForeground = Color(nsColor: ColorTokens.color(ColorTokens.accentForeground))
         /// Barely-there fill for hover.
         static let hover = Color(nsColor: .dynamic(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.03, darkAlpha: 0.035))
         /// Subtle fill for selection.
@@ -29,7 +29,7 @@ enum Theme {
         /// Faint shadow, used only on floating elements (toast, popovers).
         static let shadow = Color(nsColor: .dynamic(light: 0x000000, dark: 0x000000, lightAlpha: 0.06, darkAlpha: 0.4))
 
-        static let nsBackground = NSColor.dynamic(light: 0xFFFFFF, dark: 0x0F0F10)
+        static let nsBackground = ColorTokens.color(ColorTokens.background)
     }
 
     // MARK: Spacing (4pt grid)
@@ -152,22 +152,6 @@ enum Theme {
         for name in ["Inter-Regular", "Inter-Medium", "Inter-SemiBold"] {
             guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else { continue }
             CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
-        }
-    }
-}
-
-extension NSColor {
-    convenience init(hex: UInt32, alpha: CGFloat = 1) {
-        self.init(srgbRed: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
-                  blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
-    }
-
-    /// A color that follows the system light/dark appearance.
-    static func dynamic(light: UInt32, dark: UInt32, lightAlpha: CGFloat = 1, darkAlpha: CGFloat = 1) -> NSColor {
-        NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-                ? NSColor(hex: dark, alpha: darkAlpha)
-                : NSColor(hex: light, alpha: lightAlpha)
         }
     }
 }
