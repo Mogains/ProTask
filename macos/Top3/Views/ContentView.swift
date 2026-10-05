@@ -129,6 +129,7 @@ struct ContentView: View {
         case let .list(l): l.title
         case .calendar: "Calendar"
         case .done: "Done"
+        case .review: "Review"
         }
     }
 
@@ -144,6 +145,9 @@ struct ContentView: View {
         case let .list(l):
             let n = model.ordered(l, in: visible).count
             return n == 1 ? "1 open" : "\(n) open"
+        case .review:
+            let week = WeeklyStats.weekInterval(containing: Date(), calendar: .current)
+            return "Week of \(week.start.formatted(.dateTime.month(.abbreviated).day()))"
         case .done:
             let n = DoneView.completed(in: visible).count
             return n == 1 ? "1 task" : "\(n) tasks"
@@ -183,6 +187,7 @@ struct ContentView: View {
         case let .list(l): ListScreen(list: l, tasks: tasks)
         case .calendar: CalendarScreen()
         case .done: DoneView(tasks: tasks)
+        case .review: ReviewView(tasks: tasks)
         }
     }
 }

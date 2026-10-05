@@ -57,6 +57,7 @@ extension AppModel {
         items += [
             PaletteItem(id: "go-calendar", title: "Go to Calendar", kind: .section, icon: .calendar) { [self] in section = .calendar },
             PaletteItem(id: "go-done", title: "Go to Done", kind: .section, icon: .done) { [self] in section = .done },
+            PaletteItem(id: "go-review", title: "Go to Review", kind: .section, icon: .calendar) { [self] in section = .review },
             PaletteItem(id: "pin", title: "Add selected task to Top 3", shortcut: "⌘1", kind: .action, icon: .today) { [self] in
                 if let t = task(selectedTaskID) { pin(t.id) } else { showToast("Select a task first.") }
             },

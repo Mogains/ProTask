@@ -8,6 +8,7 @@ enum SidebarSection: Hashable {
     case list(ListKind)
     case calendar
     case done
+    case review
 }
 
 struct EditorRequest: Identifiable {
@@ -669,6 +670,7 @@ final class AppModel {
         [("planning", { self.showPlanning = true }), ("wrapup", { self.showWrapUp = true }),
          ("waiting", { self.section = .list(.waitingOn) }), ("today2", { self.section = .today }),
          ("tagfilter", { self.section = .list(.haveTo); self.tagFilter = "work" }),
+         ("review", { self.section = .review }),
          ("focus", {
              self.section = .list(.haveTo)
              // In memory only, so snapshots never touch real preferences.
@@ -718,6 +720,7 @@ final class AppModel {
         if let passport = allTasks().first(where: { $0.title == "Renew passport" }) { addRolledOver([passport.id], to: today) }
         report.actualSeconds = 40 * 60
         report.tags = ["work"]
+        context.insert(FocusSession(taskID: report.id, taskTitle: report.title, start: now.addingTimeInterval(-7200), seconds: 40 * 60))
         allTasks().first { $0.title == "Reply to Sam about the offsite" }?.tags = ["work", "team"]
         allTasks().first { $0.title == "Book dentist appointment" }?.tags = ["errands"]
         addTask(TaskDraft(title: "Contract redlines", list: .waitingOn, waitingOn: "Legal", followUpDate: cal.startOfDay(for: now)))
