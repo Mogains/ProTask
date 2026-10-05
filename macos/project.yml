@@ -1,0 +1,66 @@
+name: Top3
+options:
+  bundleIdPrefix: com.anmolbhatt
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    # Unsigned distribution: ad-hoc sign so macOS privacy prompts (Calendar, Notifications) work.
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+    DEVELOPMENT_TEAM: ""
+targets:
+  Top3:
+    type: application
+    platform: macOS
+    sources:
+      - path: Top3
+    settings:
+      base:
+        PRODUCT_NAME: "Top 3"
+        PRODUCT_MODULE_NAME: Top3
+        PRODUCT_BUNDLE_IDENTIFIER: com.anmolbhatt.top3
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_HARDENED_RUNTIME: NO
+        COMBINE_HIDPI_IMAGES: YES
+    info:
+      path: Top3/Info.plist
+      properties:
+        CFBundleDisplayName: Top 3
+        CFBundleName: Top 3
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.productivity
+        LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
+        NSHumanReadableCopyright: ""
+        NSCalendarsFullAccessUsageDescription: Top 3 adds tasks with due dates and your daily Top 3 to a "Top 3" calendar, and shows today's events so you can see your free time.
+        NSCalendarsUsageDescription: Top 3 adds tasks with due dates and your daily Top 3 to a "Top 3" calendar, and shows today's events so you can see your free time.
+        UTExportedTypeDeclarations:
+          - UTTypeIdentifier: com.anmolbhatt.top3.task
+            UTTypeDescription: Top 3 Task
+            UTTypeConformsTo: [public.data]
+            UTTypeTagSpecification: {}
+  Top3Tests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Top3Tests
+      - path: Top3/Logic
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.anmolbhatt.top3.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Top3:
+    build:
+      targets:
+        Top3: all
+        Top3Tests: [test]
+    test:
+      targets: [Top3Tests]
