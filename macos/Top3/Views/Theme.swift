@@ -70,7 +70,7 @@ enum Theme {
         static let windowMinHeight: CGFloat = 480
         static let sheetWidth: CGFloat = 460
         static let quickAddWidth: CGFloat = 400
-        static let menuBarWidth: CGFloat = 300
+        static let menuBarWidth: CGFloat = 320
         static let settingsWidth: CGFloat = 440
         static let estimateField: CGFloat = 48
         static let slotNumber: CGFloat = 16

@@ -64,6 +64,8 @@ final class AppModel {
     var toast: ToastMessage?
     var celebrating = false
     private(set) var today: String
+    /// Bumped on every save so views outside SwiftData queries (menu bar label, widget) refresh.
+    private(set) var revision = 0
     private(set) var autoSort: [ListKind: Bool] = [:]
 
     var resetHour: Int { Self.savedResetHour() }
@@ -585,7 +587,19 @@ final class AppModel {
 
     func save() {
         do { try context.save() } catch { showToast("Couldn't save: \(error.localizedDescription)") }
+        revision += 1
+        didSave()
     }
+
+    /// Top 3 progress for the menu bar: done and pinned counts.
+    var top3Progress: (done: Int, pinned: Int) {
+        _ = revision
+        let pins = allTasks().filter { $0.topSlot != nil }
+        return (pins.filter(\.isCompleted).count, pins.count)
+    }
+
+    /// Hook for work after every save (widget snapshot).
+    func didSave() {}
 
     #if DEBUG
     /// Renders the main window for each section to PNG files, then quits. Needs no screen-recording permission.
@@ -601,6 +615,14 @@ final class AppModel {
             if let tiff = renderer.nsImage?.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
                 try? rep.representation(using: .png, properties: [:])?
                     .write(to: URL(fileURLWithPath: dir).appending(path: "icons-\(appearance == .darkAqua ? "dark" : "light").png"))
+            }
+        }
+        do {
+            let r = ImageRenderer(content: MenuBarQuickAdd().environment(self).modelContainer(container)
+                .environment(\.colorScheme, env["TOP3_APPEARANCE"] == "light" ? .light : .dark))
+            r.scale = 2
+            if let tiff = r.nsImage?.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
+                try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: dir).appending(path: "menubar.png"))
             }
         }
         let shots: [(String, SidebarSection)] = [("today", .today), ("haveto", .list(.haveTo)), ("parking", .list(.parkingLot)),

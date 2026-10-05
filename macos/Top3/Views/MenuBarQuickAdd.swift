@@ -1,45 +1,66 @@
 import SwiftData
 import SwiftUI
 
-/// Optional menu bar item for parking ideas without opening the main window.
+/// Menu bar label: Top 3 progress as plain text, e.g. "2/3".
+struct MenuBarLabel: View {
+    let model: AppModel
+    var body: some View {
+        let p = model.top3Progress
+        Text("\(p.done)/3").monospacedDigit().accessibilityLabel("ProTask, \(p.done) of 3 done")
+    }
+}
+
+/// Menu bar dropdown: today's Top 3 with checkboxes, a quick-add field, and Open ProTask.
 struct MenuBarQuickAdd: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openWindow) private var openWindow
-    @Query(sort: \TaskItem.createdAt, order: .reverse) private var tasks: [TaskItem]
+    @Query private var tasks: [TaskItem]
     @State private var text = ""
-    @State private var saved = false
+    @State private var detectDates = true
 
     var body: some View {
-        let ideas = tasks.filter(\.isIdea).prefix(5)
+        let pins = model.pinned(in: tasks)
         VStack(alignment: .leading, spacing: 0) {
-            InputField(placeholder: "Park an idea…", text: $text, leadingIcon: .quickAdd, bordered: false,
-                       focusOnAppear: true) {
-                guard model.addIdea(text) else { return }
-                text = ""
-                withAnimation(Theme.Motion.standard) { saved = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + Theme.Motion.toastDuration / 2) {
-                    withAnimation(Theme.Motion.standard) { saved = false }
-                }
-            }
-            .padding(Theme.Space.m)
-            Hairline()
-            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    SectionLabel(title: "Parking Lot")
+                    SectionLabel(title: "Top 3")
                     Spacer()
-                    if saved { Text("Parked").font(Theme.Fonts.caption).foregroundStyle(Theme.Palette.accent) }
+                    Text("\(pins.values.filter(\.isCompleted).count)/3")
+                        .font(Theme.Fonts.caption).foregroundStyle(Theme.Palette.textTertiary).monospacedDigit()
                 }
-                .padding(.bottom, Theme.Space.xxs)
-                if ideas.isEmpty {
-                    Text("No parked ideas.").font(Theme.Fonts.small).foregroundStyle(Theme.Palette.textTertiary)
-                }
-                ForEach(Array(ideas)) { idea in
-                    HStack {
-                        Text(idea.title).font(Theme.Fonts.small).foregroundStyle(Theme.Palette.text).lineLimit(1)
-                        Spacer()
-                        Text(Fmt.time(idea.createdAt)).font(Theme.Fonts.secondary).foregroundStyle(Theme.Palette.textTertiary)
+                .frame(height: Theme.Size.row)
+                ForEach(Top3Planner.slots, id: \.self) { n in
+                    if let t = pins[n] {
+                        Button { withAnimation(Theme.Motion.list) { model.setCompleted(t, !t.isCompleted) } } label: {
+                            HStack(spacing: Theme.Space.s) {
+                                Checkbox(checked: t.isCompleted)
+                                Text(t.title)
+                                    .font(Theme.Fonts.small)
+                                    .foregroundStyle(t.isCompleted ? Theme.Palette.textTertiary : Theme.Palette.text)
+                                    .strikethrough(t.isCompleted, color: Theme.Palette.textTertiary)
+                                    .lineLimit(1)
+                                Spacer()
+                            }
+                            .frame(height: Theme.Size.row)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        HStack(spacing: Theme.Space.s) {
+                            Text("\(n)").font(Theme.Fonts.mono).foregroundStyle(Theme.Palette.textTertiary)
+                                .frame(width: Theme.Size.checkbox)
+                            Text("Empty").font(Theme.Fonts.small).foregroundStyle(Theme.Palette.textTertiary)
+                        }
+                        .frame(height: Theme.Size.row)
                     }
                 }
+            }
+            .padding(.horizontal, Theme.Space.m)
+            .padding(.bottom, Theme.Space.s)
+            Hairline()
+            SmartTaskField(placeholder: "Add a task   ~ nice   ? idea", text: $text, detectDates: $detectDates,
+                           leadingIcon: .add, bordered: false, focusOnAppear: true) {
+                if model.capture(text, detectDates: detectDates) { text = "" }
             }
             .padding(Theme.Space.m)
             Hairline()
@@ -56,6 +77,7 @@ struct MenuBarQuickAdd: View {
         }
         .frame(width: Theme.Size.menuBarWidth)
         .background(Theme.Palette.surface)
+        .foregroundStyle(Theme.Palette.text)
         .tint(Theme.Palette.accent)
     }
 }

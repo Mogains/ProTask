@@ -34,7 +34,7 @@ struct ProTaskApp: App {
                 .environment(model)
                 .modelContainer(model.container)
         } label: {
-            Image(IconName.mark.assetName).renderingMode(.template).accessibilityLabel("ProTask")
+            MenuBarLabel(model: model)
         }
         .menuBarExtraStyle(.window)
     }
