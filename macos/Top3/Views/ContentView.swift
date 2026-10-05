@@ -45,6 +45,9 @@ struct ContentView: View {
         .sheet(item: $model.editor) { request in
             TaskEditor(request: request).presentationBackground(Theme.Palette.surface)
         }
+        .sheet(item: $model.customFocusRequest) { request in
+            CustomFocusSheet(request: request).presentationBackground(Theme.Palette.surface)
+        }
         .sheet(isPresented: $model.showQuickPark) {
             QuickParkSheet().presentationBackground(Theme.Palette.surface)
         }
@@ -89,6 +92,7 @@ struct ContentView: View {
                 Text(subtitle).font(Theme.Fonts.small).foregroundStyle(Theme.Palette.textTertiary)
             }
             Spacer()
+            if !showSidebar { FocusTimerView(compact: true) }
             accessory
             HStack(spacing: Theme.Space.xxs) {
                 IconButton(icon: .search, help: "Command palette (⌘K)") { model.showPalette = true }

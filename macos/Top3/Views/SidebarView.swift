@@ -36,6 +36,8 @@ struct SidebarView: View {
 
             Spacer()
 
+            FocusTimerView().padding(.horizontal, Theme.Space.s)
+
             SettingsLink {
                 HStack(spacing: Theme.Space.s) {
                     Text("Settings").font(Theme.Fonts.small)

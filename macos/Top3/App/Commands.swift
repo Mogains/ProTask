@@ -16,6 +16,9 @@ struct Top3Commands: Commands {
             Divider()
             Button("Edit Task") { model.editSelected() }.keyboardShortcut("e", modifiers: .command)
             Button("Mark as Done or Not Done") { model.toggleSelectedDone() }.keyboardShortcut(.return, modifiers: .command)
+            Button("Start or Stop Focus Timer") { model.toggleFocusForSelection() }
+                .keyboardShortcut("f", modifiers: [.command, .shift])
+            Divider()
             Button("Delete Task") { model.deleteSelected() }
         }
         CommandGroup(before: .sidebar) {

@@ -28,7 +28,9 @@ extension AppModel {
     }
 
     /// Routes notifications added by later features (focus timer, follow-ups).
-    func handleOtherNotification(_ identifier: String, action: String) {}
+    func handleOtherNotification(_ identifier: String, action: String) {
+        if identifier == RunningFocus.notificationID { finishFocusIfDue() }
+    }
 
     func bringMainWindowForward() {
         NSApp.activate()

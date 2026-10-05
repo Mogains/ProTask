@@ -142,7 +142,12 @@ struct RowMeta: View {
                 if let rule = task.recurrence {
                     Icon(.repeat, size: Theme.Size.dragHandle).help("Repeats: \(rule.summary)")
                 }
-                if let est = Fmt.minutes(task.estimateMinutes) {
+                if task.actualSeconds >= 60 {
+                    let actual = Fmt.minutes(task.actualSeconds / 60) ?? ""
+                    Text(task.estimateMinutes.flatMap(Fmt.minutes).map { "\(actual) / \($0)" } ?? "\(actual) spent")
+                        .foregroundStyle(Theme.Palette.textTertiary)
+                        .help("Actual focus time / estimate")
+                } else if let est = Fmt.minutes(task.estimateMinutes) {
                     Text(est).foregroundStyle(Theme.Palette.textTertiary)
                 }
             }
@@ -167,6 +172,11 @@ struct TaskMenu: View {
         } else {
             Button(task.isCompleted ? "Mark as Not Done" : "Mark as Done") { model.setCompleted(task, !task.isCompleted) }
             if !task.isCompleted {
+                Menu("Focus") {
+                    Button("25 minutes") { model.startFocus(on: task, minutes: 25) }
+                    Button("50 minutes") { model.startFocus(on: task, minutes: 50) }
+                    Button("Custom…") { model.customFocusRequest = CustomFocusRequest(taskID: task.id) }
+                }
                 Menu("Top 3") {
                     ForEach(Top3Planner.slots, id: \.self) { n in
                         Button("Slot \(n)") { model.pin(task.id, slot: n) }

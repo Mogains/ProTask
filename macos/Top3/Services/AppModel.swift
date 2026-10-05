@@ -50,6 +50,11 @@ final class AppModel {
     var showPalette = false
     var showPlanning = false
     var showWrapUp = false
+    /// The running focus timer, if any. Persisted so it survives a restart.
+    var focus: RunningFocus? = RunningFocus.load()
+    /// Task id (or nil for an untitled session) awaiting a custom focus length.
+    var customFocusRequest: CustomFocusRequest?
+    @ObservationIgnored var focusEndTimer: Timer?
     var toast: ToastMessage?
     var celebrating = false
     private(set) var today: String
@@ -79,7 +84,7 @@ final class AppModel {
             ?? dir.appending(path: "Top3.store")
         let config = ModelConfiguration(url: storeURL)
         do {
-            container = try ModelContainer(for: TaskItem.self, ListSetting.self, DayLog.self, configurations: config)
+            container = try ModelContainer(for: TaskItem.self, ListSetting.self, DayLog.self, FocusSession.self, configurations: config)
         } catch {
             fatalError("Could not open the ProTask database: \(error)")
         }
@@ -98,6 +103,7 @@ final class AppModel {
         HotKeyService.shared.onPress = { QuickCaptureController.shared.toggle() }
         HotKeyService.shared.register(HotKey.saved)
         applyAppearance()
+        resumeFocus()
         #if DEBUG
         let snapshotting = ProcessInfo.processInfo.environment["TOP3_SNAPSHOT_DIR"] != nil
         #else
@@ -108,6 +114,7 @@ final class AppModel {
             Task { @MainActor in
                 self?.checkDay()
                 self?.calendar.loadToday()
+                self?.finishFocusIfDue()
             }
         }
         activeObserver = NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in
@@ -438,7 +445,10 @@ final class AppModel {
     /// Hook for features that add palette actions (focus timer, review…).
     func extraPaletteActions() -> [PaletteItem] {
         [PaletteItem(id: "plan", title: "Plan my day", kind: .action, icon: .today) { [self] in showPlanning = true },
-         PaletteItem(id: "wrap", title: "Wrap up the day", kind: .action, icon: .done) { [self] in showWrapUp = true }]
+         PaletteItem(id: "wrap", title: "Wrap up the day", kind: .action, icon: .done) { [self] in showWrapUp = true },
+         PaletteItem(id: "focus", title: focus == nil ? "Start focus timer" : "Stop focus timer", detail: focus == nil ? task(selectedTaskID)?.title : focus?.title,
+                     shortcut: "⇧⌘F", kind: .action, icon: .later) { [self] in toggleFocusForSelection() },
+         PaletteItem(id: "focus-50", title: "Start 50-minute focus", kind: .action, icon: .later) { [self] in startFocus(on: task(selectedTaskID), minutes: 50) }]
     }
 
     // MARK: Quick capture
@@ -593,6 +603,7 @@ final class AppModel {
             captureWindow(as: name, in: dir) {}
             showPlanning = false
             showWrapUp = false
+            focus = nil
             try? await Task.sleep(for: .seconds(0.3))
         }
         if env["TOP3_SNAPSHOT_PIN4"] != nil, let extra = allTasks().first(where: { $0.title == "Read two chapters" }) {
@@ -610,7 +621,12 @@ final class AppModel {
 
     /// Extra states to capture in debug snapshots (sheets, overlays added by later features).
     func debugExtraShots() -> [(String, () -> Void)] {
-        [("planning", { self.showPlanning = true }), ("wrapup", { self.showWrapUp = true })]
+        [("planning", { self.showPlanning = true }), ("wrapup", { self.showWrapUp = true }),
+         ("focus", {
+             self.section = .list(.haveTo)
+             // In memory only, so snapshots never touch real preferences.
+             self.focus = RunningFocus(taskID: nil, title: "Finish quarterly report", start: Date().addingTimeInterval(-7 * 60), seconds: 25 * 60)
+         })]
     }
 
     private func captureWindow(as name: String, in dir: String, before: () -> Void) {
@@ -653,6 +669,7 @@ final class AppModel {
         for idea in ["Weekly review template", "Ask about the standing desk budget"] { addIdea(idea) }
         for d in 1...4 { dayLog(DayKey.adding(-d, to: today)).top3Complete = true }
         if let passport = allTasks().first(where: { $0.title == "Renew passport" }) { addRolledOver([passport.id], to: today) }
+        report.actualSeconds = 40 * 60
         refreshDayLog()
         selectedTaskID = nil
         save()

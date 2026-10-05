@@ -30,6 +30,8 @@ final class TaskItem {
     var seriesID: UUID?
     /// The occurrence created when this one was completed, so re-checking never duplicates it.
     var nextOccurrenceID: UUID?
+    /// Focus time logged against this task, in seconds.
+    var actualSeconds: Int = 0
 
     init(title: String, list: ListKind, position: Double) {
         self.title = title
@@ -66,6 +68,23 @@ final class TaskItem {
 }
 
 extension TaskItem: SortableTask {}
+
+/// One finished focus session (feeds actual time and the weekly review).
+@Model
+final class FocusSession {
+    var id: UUID = UUID()
+    var taskID: UUID?
+    var taskTitle: String = ""
+    var start: Date = Date()
+    var seconds: Int = 0
+
+    init(taskID: UUID?, taskTitle: String, start: Date, seconds: Int) {
+        self.taskID = taskID
+        self.taskTitle = taskTitle
+        self.start = start
+        self.seconds = seconds
+    }
+}
 
 /// Per-list sort mode.
 @Model

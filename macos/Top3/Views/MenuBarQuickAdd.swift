@@ -65,6 +65,7 @@ struct SettingsView: View {
     @AppStorage("showMenuBarExtra") private var showMenuBar = true
     @AppStorage("resetHour") private var resetHour = DayKey.defaultResetHour
     @AppStorage("morningPlanning") private var morningPlanning = true
+    @AppStorage(AppModel.focusMinutesKey) private var focusMinutes = 25
     @AppStorage(AppModel.eveningEnabledKey) private var eveningOn = true
     @AppStorage(AppModel.eveningHourKey) private var eveningHour = 18
     @AppStorage(AppModel.eveningMinuteKey) private var eveningMinute = 0
@@ -106,6 +107,9 @@ struct SettingsView: View {
                     .labelsHidden()
                     .datePickerStyle(.field)
                     .disabled(!eveningOn)
+            }
+            row("Focus timer") {
+                Segments(options: [15, 25, 45, 50, 90], selection: $focusMinutes) { "\($0) min" }
             }
             Hairline().padding(.vertical, Theme.Space.s)
             SectionLabel(title: "Permissions").padding(.horizontal, Theme.Space.l).frame(height: Theme.Size.row)
