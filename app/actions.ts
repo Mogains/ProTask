@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { getSnapshot } from "@/lib/state";
+import { sortTasks } from "@/lib/sort";
 import { normalizeInput } from "@/lib/taskInput";
 import { isListKind, type ActionResult, type ListKind, type Snapshot, type TaskInput } from "@/lib/types";
 
@@ -48,8 +49,21 @@ export async function toggleComplete(id: string, completed: boolean): Promise<Ac
 /** Persist a list's full order after a drag. Also moves tasks into `list` if they came from the other list. */
 export async function reorderList(list: string, orderedIds: string[]): Promise<ActionResult> {
   if (!isListKind(list)) throw new Error("Unknown list.");
-  await prisma.$transaction(
-    orderedIds.map((id, i) => prisma.task.updateMany({ where: { id }, data: { list, position: (i + 1) * 1000 } })),
-  );
+  await prisma.$transaction([
+    ...orderedIds.map((id, i) => prisma.task.updateMany({ where: { id }, data: { list, position: (i + 1) * 1000 } })),
+    // A manual drag switches this list to manual order until auto sort is turned back on.
+    prisma.listSetting.upsert({ where: { list }, create: { list, autoSort: false }, update: { autoSort: false } }),
+  ]);
+  return result();
+}
+
+/** Turn auto sort on or off. Either way the current sorted order is saved, so nothing jumps. */
+export async function setAutoSort(list: string, autoSort: boolean): Promise<ActionResult> {
+  if (!isListKind(list)) throw new Error("Unknown list.");
+  const tasks = sortTasks(await prisma.task.findMany({ where: { list, completed: false, topSlot: null } }));
+  await prisma.$transaction([
+    ...tasks.map((t, i) => prisma.task.update({ where: { id: t.id }, data: { position: (i + 1) * 1000 } })),
+    prisma.listSetting.upsert({ where: { list }, create: { list, autoSort }, update: { autoSort } }),
+  ]);
   return result();
 }

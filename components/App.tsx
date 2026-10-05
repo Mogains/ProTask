@@ -15,10 +15,12 @@ import {
   type DragStartEvent,
 } from "@dnd-kit/core";
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
-import { createTask, deleteTask, reorderList, toggleComplete, updateTask } from "@/app/actions";
+import { createTask, deleteTask, reorderList, setAutoSort, toggleComplete, updateTask } from "@/app/actions";
+import { sortTasks } from "@/lib/sort";
 import { dailyCompletion } from "@/lib/stats";
 import { normalizeInput } from "@/lib/taskInput";
 import { isListKind, LISTS, type ListKind, type Snapshot, type Task, type TaskInput } from "@/lib/types";
+import { AutoSortToggle } from "./AutoSortToggle";
 import { DoneSection } from "./DoneSection";
 import { Header } from "./Header";
 import { TaskCard } from "./TaskCard";
@@ -55,9 +57,9 @@ export default function App({ initial }: { initial: Snapshot }) {
   const lists = useMemo(() => {
     const out: Record<ListKind, Task[]> = { HAVE_TO: [], NICE_TO: [] };
     for (const t of tasks) if (!t.completed && t.topSlot == null && isListKind(t.list)) out[t.list].push(t);
-    for (const l of LISTS) out[l].sort((a, b) => a.position - b.position);
+    for (const l of LISTS) out[l] = snap.autoSort[l] ? sortTasks(out[l]) : out[l].sort((a, b) => a.position - b.position);
     return out;
-  }, [tasks]);
+  }, [tasks, snap.autoSort]);
 
   const done = useMemo(
     () =>
@@ -173,12 +175,29 @@ export default function App({ initial }: { initial: Snapshot }) {
     run(
       (s) => ({
         ...s,
+        autoSort: { ...s.autoSort, [list]: false },
         tasks: s.tasks.map((t) => {
           const i = ids.indexOf(t.id);
           return i < 0 ? t : { ...t, list, position: (i + 1) * 1000 };
         }),
       }),
       () => reorderList(list, ids.filter((id) => !id.startsWith("tmp-"))),
+    );
+  }
+
+  function toggleAutoSort(list: ListKind) {
+    const on = !snap.autoSort[list];
+    const ids = sortTasks(lists[list]).map((t) => t.id);
+    run(
+      (s) => ({
+        ...s,
+        autoSort: { ...s.autoSort, [list]: on },
+        tasks: s.tasks.map((t) => {
+          const i = ids.indexOf(t.id);
+          return i < 0 ? t : { ...t, position: (i + 1) * 1000 };
+        }),
+      }),
+      () => setAutoSort(list, on),
     );
   }
 
@@ -233,7 +252,16 @@ export default function App({ initial }: { initial: Snapshot }) {
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-2">
             {LISTS.map((l) => (
-              <TaskList key={l} list={l} tasks={shown(l)} today={today} onToggle={toggle} onEdit={openEdit} onAdd={openNew} />
+              <TaskList
+                key={l}
+                list={l}
+                tasks={shown(l)}
+                today={today}
+                onToggle={toggle}
+                onEdit={openEdit}
+                onAdd={openNew}
+                headerExtra={<AutoSortToggle on={snap.autoSort[l]} onToggle={() => toggleAutoSort(l)} />}
+              />
             ))}
           </div>
           <DoneSection tasks={done} onToggle={toggle} onDelete={remove} />
