@@ -15,6 +15,7 @@ export function SortableTask(props: ComponentProps<typeof TaskCard>) {
       {...attributes}
       {...listeners}
       aria-roledescription="draggable task"
+      aria-label={`Drag “${props.task.title}”`}
     >
       <TaskCard {...props} />
     </div>

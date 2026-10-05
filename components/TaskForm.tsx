@@ -26,12 +26,14 @@ export function TaskForm({ task, defaultList, onSave, onDelete, onClose }: Props
   const [estimate, setEstimate] = useState(task?.estimateMinutes ? String(task.estimateMinutes) : "");
   const titleRef = useRef<HTMLInputElement>(null);
 
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
     titleRef.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeRef.current();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, []);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();

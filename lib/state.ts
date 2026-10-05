@@ -1,9 +1,11 @@
 import { prisma } from "./db";
 import { computeStreak, dayKey } from "./day";
+import { runMorningReset } from "./topServer";
 import { LISTS, type ListKind, type Snapshot } from "./types";
 
 export async function getSnapshot(): Promise<Snapshot> {
   const today = dayKey();
+  await runMorningReset(today);
   const [tasks, settings, completeDays, todayLog] = await Promise.all([
     prisma.task.findMany({ orderBy: [{ position: "asc" }, { createdAt: "asc" }] }),
     prisma.listSetting.findMany(),

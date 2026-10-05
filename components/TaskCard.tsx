@@ -16,7 +16,7 @@ type Props = {
   onToggle: (task: Task, completed: boolean) => void;
   onEdit: (task: Task) => void;
   onStar?: (task: Task) => void;
-  onActivate?: (task: Task) => void;
+  onActivate?: (task: Task | null) => void;
   /** Keep the card in place after checking (Top 3 slots). */
   stayOnComplete?: boolean;
   starred?: boolean;
@@ -43,6 +43,7 @@ export function TaskCard({ task, today, onToggle, onEdit, onStar, onActivate, st
   return (
     <div
       onPointerEnter={() => onActivate?.(task)}
+      onPointerLeave={() => onActivate?.(null)}
       onFocusCapture={() => onActivate?.(task)}
       className={[
         "group flex items-start gap-3 rounded-xl border px-3 py-2.5 transition-colors",

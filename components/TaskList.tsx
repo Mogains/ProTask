@@ -14,7 +14,7 @@ type Props = {
   onEdit: (t: Task) => void;
   onAdd: (list: ListKind) => void;
   onStar?: (t: Task) => void;
-  onActivate?: (t: Task) => void;
+  onActivate?: (t: Task | null) => void;
   headerExtra?: ReactNode;
 };
 
