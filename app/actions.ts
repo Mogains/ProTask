@@ -4,7 +4,7 @@ import { after } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSnapshot } from "@/lib/state";
 import { dayKey } from "@/lib/day";
-import { deleteEventFor, disconnect, syncTasks } from "@/lib/google";
+import { deleteEventsFor, disconnect, syncTasks } from "@/lib/google";
 import { sortTasks } from "@/lib/sort";
 import { planTopAssignment, TOP3_FULL_MESSAGE } from "@/lib/top3";
 import { refreshTodayLog } from "@/lib/topServer";
@@ -52,9 +52,10 @@ export async function updateTask(id: string, input: TaskInput): Promise<ActionRe
 
 export async function deleteTask(id: string): Promise<ActionResult> {
   await requireSession();
-  const task = await prisma.task.findUnique({ where: { id }, select: { calendarEventId: true } });
+  // Read every linked event first: deleting the task cascades to its links.
+  const links = await prisma.eventLink.findMany({ where: { taskId: id }, select: { eventId: true } });
   await prisma.task.deleteMany({ where: { id } });
-  if (task?.calendarEventId) after(() => deleteEventFor(id, task.calendarEventId));
+  if (links.length) after(() => deleteEventsFor(id, links.map((l) => l.eventId)));
   await refreshTodayLog();
   return result();
 }

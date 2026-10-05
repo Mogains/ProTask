@@ -99,7 +99,7 @@ final class AppModel {
             ?? dir.appending(path: "Top3.store")
         let config = ModelConfiguration(url: storeURL)
         do {
-            container = try ModelContainer(for: TaskItem.self, ListSetting.self, DayLog.self, FocusSession.self, configurations: config)
+            container = try ModelContainer(for: TaskItem.self, ListSetting.self, DayLog.self, FocusSession.self, EventLink.self, configurations: config)
         } catch {
             // Only the error domain and code: the full error can include file paths and stored values.
             let ns = error as NSError
@@ -122,6 +122,7 @@ final class AppModel {
     // MARK: Launch and day rollover
 
     func onLaunch() async {
+        migrateLegacyEventLinks()
         runMorningReset()
         HotKeyService.shared.onPress = { QuickCaptureController.shared.toggle() }
         HotKeyService.shared.register(HotKey.saved)
@@ -312,7 +313,7 @@ final class AppModel {
     }
 
     func delete(_ t: TaskItem) {
-        calendar.removeEvent(id: t.calendarEventID)
+        calendar.removeEvents(of: t) // every linked event; the links themselves cascade with the task
         notifications.cancel(id: t.id)
         notifications.cancel(identifier: Self.followUpID(t.id))
         if selectedTaskID == t.id { selectedTaskID = nil }
@@ -575,9 +576,26 @@ final class AppModel {
 
     // MARK: Calendar
 
+    /// Migration: before multiple links, a task kept one `calendarEventID`. It was the due-date event when the
+    /// task had a due date (a repeating series if it was an open recurring task), otherwise today's Top 3 event.
+    func migrateLegacyEventLinks() {
+        var changed = false
+        for t in allTasks() {
+            guard let id = t.calendarEventID else { continue }
+            t.calendarEventID = nil
+            changed = true
+            let kind: LinkKind = t.dueDate == nil ? .pinned : (t.recurrence != nil && !t.isCompleted ? .series : .due)
+            guard t.link(kind.slot) == nil, !id.isEmpty else { continue }
+            let link = EventLink(kind: kind, eventIdentifier: id)
+            context.insert(link)
+            link.task = t
+        }
+        if changed { save() }
+    }
+
     func syncAllEvents() {
         guard calendar.hasAccess else { return }
-        for t in allTasks() where !t.isIdea && (t.dueDate != nil || t.topSlot != nil || t.calendarEventID != nil) {
+        for t in allTasks() where !t.isIdea && (t.dueDate != nil || t.topSlot != nil || !(t.links ?? []).isEmpty) {
             calendar.sync(t, today: today)
         }
         calendar.loadToday()

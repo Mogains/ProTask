@@ -28,12 +28,34 @@ model Task {
   topSlot         Int?      @unique
   /// "YYYY-MM-DD" day the task was pinned for; used by the morning reset
   topDate         String?
+  /// Legacy single event link, migrated into EventLink rows (lib/eventLinks.ts). No longer written.
   calendarEventId String?
   syncError       String?
+  links           EventLink[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   @@index([list, position])
+}
+
+/// One calendar event that belongs to a task. A task has at most one link of each kind.
+model EventLink {
+  id              String    @id @default(cuid())
+  taskId          String
+  task            Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  /// "DUE" (event on the due date) | "PINNED" (event on the Top 3 day)
+  kind            String
+  /// Google Calendar event id
+  eventId         String    @unique
+  /// Google etag of the last version we wrote or read
+  etag            String?
+  /// contentHash() of title/start/end as of the last sync, when both sides agreed
+  contentHash     String?
+  /// Google's "updated" time of the last version we saw
+  remoteUpdatedAt DateTime?
+  lastSyncedAt    DateTime  @default(now())
+
+  @@unique([taskId, kind])
 }
 
 /// Per-list sort mode.

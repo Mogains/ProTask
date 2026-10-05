@@ -1,6 +1,7 @@
 import { google, type calendar_v3 } from "googleapis";
-import { buildEvent } from "./calendarEvent";
+import { buildEvents, contentHash, LINK_KINDS } from "./calendarEvent";
 import { prisma } from "./db";
+import { migrateLegacyLinks } from "./eventLinks";
 import { dayKey, parseKey } from "./day";
 import type { CalEvent } from "./freeTime";
 import { CALENDAR_NAME, googleConfigured, redirectUri } from "./googleConfig";
@@ -56,7 +57,7 @@ export async function disconnect() {
   }
   await clearTokens();
   if (!acct) return;
-  // Keep calendarEventId on tasks: reconnecting finds the same "Top 3" calendar and updates those events.
+  // Keep event links: reconnecting finds the same "Top 3" calendar and updates those events.
   await prisma.googleAccount.delete({ where: { id: 1 } });
 }
 
@@ -119,32 +120,59 @@ async function ensureCalendar(ctx: Ctx): Promise<string> {
 async function syncOne(taskId: string) {
   const ctx = await getContext();
   if (!ctx) return;
-  const task = await prisma.task.findUnique({ where: { id: taskId } });
+  await migrateLegacyLinks();
+  const task = await prisma.task.findUnique({ where: { id: taskId }, include: { links: true } });
   if (!task) return;
   try {
     const calendarId = await ensureCalendar(ctx);
-    const body = buildEvent(task, dayKey(), timeZone());
-    let eventId = task.calendarEventId;
-    if (!body) {
-      if (eventId) await deleteRemote(ctx, calendarId, eventId);
-      eventId = null;
-    } else if (eventId) {
-      try {
-        await ctx.cal.events.update({ calendarId, eventId, requestBody: body });
-      } catch (e) {
-        if (status(e) !== 404 && status(e) !== 410) throw e;
-        eventId = (await ctx.cal.events.insert({ calendarId, requestBody: body })).data.id ?? null;
+    const desired = buildEvents(task, dayKey(), timeZone());
+    for (const kind of LINK_KINDS) {
+      const body = desired[kind];
+      const link = task.links.find((l) => l.kind === kind);
+      if (!body) {
+        if (link) {
+          await deleteRemote(ctx, calendarId, link.eventId);
+          await prisma.eventLink.deleteMany({ where: { id: link.id } });
+        }
+        continue;
       }
-    } else {
-      eventId = (await ctx.cal.events.insert({ calendarId, requestBody: body })).data.id ?? null;
+      const hash = contentHash(body);
+      if (link) {
+        if (link.contentHash === hash) continue; // calendar already shows this
+        try {
+          const res = await ctx.cal.events.update({ calendarId, eventId: link.eventId, requestBody: body });
+          await saveLink(link.id, res.data, hash);
+          continue;
+        } catch (e) {
+          if (status(e) !== 404 && status(e) !== 410) throw e;
+          await prisma.eventLink.deleteMany({ where: { id: link.id } }); // gone remotely: recreate below
+        }
+      }
+      const res = await ctx.cal.events.insert({ calendarId, requestBody: body });
+      await prisma.eventLink.create({
+        data: { taskId, kind, eventId: res.data.id!, ...linkFields(res.data, hash) },
+      });
     }
-    if (eventId !== task.calendarEventId || task.syncError) {
-      await prisma.task.updateMany({ where: { id: taskId }, data: { calendarEventId: eventId, syncError: null } });
-    }
+    if (task.syncError) await prisma.task.updateMany({ where: { id: taskId }, data: { syncError: null } });
   } catch (e) {
     logError("calendar sync", e);
     await prisma.task.updateMany({ where: { id: taskId }, data: { syncError: describeError(e) } });
   }
+}
+
+type RemoteMeta = { etag?: string | null; updated?: string | null };
+
+function linkFields(ev: RemoteMeta, hash: string) {
+  return {
+    etag: ev.etag ?? null,
+    contentHash: hash,
+    remoteUpdatedAt: ev.updated ? new Date(ev.updated) : null,
+    lastSyncedAt: new Date(),
+  };
+}
+
+function saveLink(id: string, ev: RemoteMeta, hash: string) {
+  return prisma.eventLink.update({ where: { id }, data: linkFields(ev, hash) });
 }
 
 async function deleteRemote(ctx: Ctx, calendarId: string, eventId: string) {
@@ -169,14 +197,15 @@ export function syncTasks(ids: Iterable<string>) {
   return Promise.all([...new Set(ids)].map((id) => enqueue(id, () => syncOne(id))));
 }
 
-/** Remove the event of a task that no longer exists. */
-export function deleteEventFor(taskId: string, eventId: string | null) {
-  if (!eventId) return Promise.resolve();
+/** Remove every event of a task that no longer exists. */
+export function deleteEventsFor(taskId: string, eventIds: string[]) {
+  if (!eventIds.length) return Promise.resolve();
   return enqueue(taskId, async () => {
     const ctx = await getContext();
     if (!ctx) return;
     try {
-      await deleteRemote(ctx, await ensureCalendar(ctx), eventId);
+      const calendarId = await ensureCalendar(ctx);
+      for (const id of eventIds) await deleteRemote(ctx, calendarId, id);
     } catch (e) {
       logError("calendar delete", e);
     }
@@ -185,10 +214,11 @@ export function deleteEventFor(taskId: string, eventId: string | null) {
 
 /** After connecting: create events for every task that should have one. */
 export async function backfill() {
+  await migrateLegacyLinks();
   const today = dayKey();
   const tasks = await prisma.task.findMany({
     where: {
-      OR: [{ dueAt: { not: null } }, { topDate: today, topSlot: { not: null } }, { calendarEventId: { not: null } }],
+      OR: [{ dueAt: { not: null } }, { topDate: today, topSlot: { not: null } }, { links: { some: {} } }],
     },
     select: { id: true },
   });

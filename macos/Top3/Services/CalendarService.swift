@@ -2,7 +2,8 @@ import AppKit
 import EventKit
 import Observation
 
-/// One-way sync of tasks to a dedicated "ProTask" calendar, plus today's events for the side panel.
+/// Sync of tasks with a dedicated "ProTask" calendar, plus today's events for the side panel.
+/// Only events in the ProTask calendar are ever created, changed or removed.
 @MainActor
 @Observable
 final class CalendarService {
@@ -97,19 +98,40 @@ final class CalendarService {
 
     // MARK: Sync
 
-    /// Brings one task's event in line with the task. Updates `task.calendarEventID`.
+    /// Brings a task's events (due or series, and pinned) in line with the task, one link per slot.
     func sync(_ task: TaskItem, today: String) {
         guard hasAccess, let calendar = top3Calendar() else { return }
-        let spec = task.isIdea ? nil : EventPlanner.spec(for: task.eventInfo, today: today)
-        let existing = task.calendarEventID.flatMap { store.event(withIdentifier: $0) }
-
-        guard let spec else {
-            if let existing { remove(existing) }
-            task.calendarEventID = nil
-            return
+        let specs = task.isIdea ? [:] : EventPlanner.specs(for: task.eventInfo, today: today)
+        var links: [LinkSlot: EventLink] = [:]
+        var events: [LinkSlot: EKEvent] = [:]
+        var matching: [LinkSlot: Bool] = [:]
+        for slot in LinkSlot.allCases {
+            guard let link = task.link(slot) else { continue }
+            links[slot] = link
+            if let e = event(for: link, in: calendar) {
+                events[slot] = e
+                matching[slot] = specs[slot].map { matches(e, $0) } ?? false
+            }
         }
-        let event = existing ?? EKEvent(eventStore: store)
-        if existing != nil, matches(event, spec), event.calendar == calendar { return }
+        let plan = LinkSync.push(specs: specs, links: links.mapValues(\.state), remoteMatches: matching)
+        for (slot, action) in plan {
+            switch action {
+            case .keep:
+                if let spec = specs[slot], let link = links[slot], link.kind != spec.kind { link.kind = spec.kind }
+            case .remove:
+                if let e = events[slot] { remove(e) }
+                if let link = links[slot] { unlink(link, from: task) }
+            case .create, .update:
+                guard let spec = specs[slot] else { continue }
+                if let event = save(spec, into: events[slot] ?? EKEvent(eventStore: store), calendar: calendar) {
+                    record(event, spec: spec, link: links[slot], task: task)
+                }
+            }
+        }
+    }
+
+    /// Writes a spec to an event. Returns the saved event, or nil (and sets lastError) on failure.
+    private func save(_ spec: EventSpec, into event: EKEvent, calendar: EKCalendar) -> EKEvent? {
         // Saving the first occurrence with .futureEvents edits the whole series (or collapses it when the rule goes away).
         let span: EKSpan = (event.hasRecurrenceRules || spec.recurrence != nil) ? .futureEvents : .thisEvent
         event.recurrenceRules = spec.recurrence.map { [Self.ekRule($0)] }
@@ -122,16 +144,54 @@ final class CalendarService {
         event.availability = spec.isAllDay ? .free : .busy
         do {
             try store.save(event, span: span, commit: true)
-            task.calendarEventID = event.eventIdentifier
             lastError = nil
+            return event
         } catch {
             lastError = "Calendar sync failed: \(error.localizedDescription)"
+            return nil
         }
     }
 
-    func removeEvent(id: String?) {
-        guard hasAccess, let id, let event = store.event(withIdentifier: id) else { return }
-        remove(event)
+    /// Remembers what was just written: identifiers, fingerprint and the event's modification time.
+    private func record(_ event: EKEvent, spec: EventSpec, link: EventLink?, task: TaskItem) {
+        let l = link ?? {
+            let n = EventLink(kind: spec.kind, eventIdentifier: event.eventIdentifier ?? "")
+            task.modelContext?.insert(n)
+            n.task = task
+            return n
+        }()
+        l.kind = spec.kind
+        l.eventIdentifier = event.eventIdentifier ?? l.eventIdentifier
+        l.externalIdentifier = event.calendarItemExternalIdentifier
+        l.contentHash = spec.fingerprint
+        l.remoteModifiedAt = event.lastModifiedDate
+        l.lastSyncedAt = Date()
+    }
+
+    private func unlink(_ link: EventLink, from task: TaskItem) {
+        task.links?.removeAll { $0.id == link.id }
+        task.modelContext?.delete(link)
+    }
+
+    /// The linked event, only if it is still in the ProTask calendar. Falls back to the external
+    /// identifier, which survives the identifier changes some accounts make when they re-sync.
+    func event(for link: EventLink, in calendar: EKCalendar) -> EKEvent? {
+        if let e = store.event(withIdentifier: link.eventIdentifier), e.calendar?.calendarIdentifier == calendar.calendarIdentifier {
+            return e
+        }
+        guard let ext = link.externalIdentifier else { return nil }
+        let match = store.calendarItems(withExternalIdentifier: ext).compactMap { $0 as? EKEvent }
+            .first { $0.calendar?.calendarIdentifier == calendar.calendarIdentifier }
+        if let match, let id = match.eventIdentifier { link.eventIdentifier = id }
+        return match
+    }
+
+    /// Removes every event a task owns (before the task itself is deleted).
+    func removeEvents(of task: TaskItem) {
+        guard hasAccess, let calendar = top3Calendar() else { return }
+        for link in task.links ?? [] {
+            if let e = event(for: link, in: calendar) { remove(e) }
+        }
     }
 
     private func remove(_ event: EKEvent) {

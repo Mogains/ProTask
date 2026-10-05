@@ -20,7 +20,11 @@ extension AppModel {
                                completedAt: t.completedAt, listRaw: t.listRaw, position: t.position, topSlot: t.topSlot, topDay: t.topDay,
                                calendarEventID: t.calendarEventID, createdAt: t.createdAt, remindAt: t.remindAt,
                                recurrenceRaw: t.recurrenceRaw, seriesID: t.seriesID, nextOccurrenceID: t.nextOccurrenceID,
-                               actualSeconds: t.actualSeconds, waitingOn: t.waitingOn, followUpDate: t.followUpDate, tagsRaw: t.tagsRaw)
+                               actualSeconds: t.actualSeconds, waitingOn: t.waitingOn, followUpDate: t.followUpDate, tagsRaw: t.tagsRaw,
+                               links: (t.links ?? []).sorted { $0.kindRaw < $1.kindRaw }.map {
+                                   BackupFile.LinkDTO(kindRaw: $0.kindRaw, eventIdentifier: $0.eventIdentifier, externalIdentifier: $0.externalIdentifier,
+                                                      contentHash: $0.contentHash, remoteModifiedAt: $0.remoteModifiedAt, lastSyncedAt: $0.lastSyncedAt)
+                               })
         }
         let logs = ((try? context.fetch(FetchDescriptor<DayLog>())) ?? []).map {
             BackupFile.DayLogDTO(day: $0.day, top3Complete: $0.top3Complete, promptDismissed: $0.promptDismissed,
@@ -104,6 +108,13 @@ extension AppModel {
             t.remindAt = d.remindAt; t.recurrenceRaw = d.recurrenceRaw; t.seriesID = d.seriesID; t.nextOccurrenceID = d.nextOccurrenceID
             t.actualSeconds = d.actualSeconds; t.waitingOn = d.waitingOn; t.followUpDate = d.followUpDate; t.tagsRaw = d.tagsRaw
             context.insert(t)
+            for l in d.links ?? [] {
+                let link = EventLink(kind: LinkKind(rawValue: l.kindRaw) ?? .due, eventIdentifier: l.eventIdentifier)
+                link.externalIdentifier = l.externalIdentifier; link.contentHash = l.contentHash
+                link.remoteModifiedAt = l.remoteModifiedAt; link.lastSyncedAt = l.lastSyncedAt
+                context.insert(link)
+                link.task = t
+            }
         }
         for d in file.dayLogs {
             let log = DayLog(day: d.day)
@@ -120,6 +131,7 @@ extension AppModel {
             context.insert(s)
         }
         save()
+        migrateLegacyEventLinks() // older backups carry a single calendarEventID
         reloadListSettings()
         for t in allTasks() {
             if t.isIdea, let at = t.remindAt, at > Date() { notifications.schedule(id: t.id, title: t.title, at: at) }

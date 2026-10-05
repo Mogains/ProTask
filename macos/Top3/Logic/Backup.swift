@@ -37,6 +37,17 @@ struct BackupFile: Codable, Equatable {
         var waitingOn: String
         var followUpDate: Date?
         var tagsRaw: String
+        /// Calendar event links (newer backups). Older backups only have calendarEventID.
+        var links: [LinkDTO]? = nil
+    }
+
+    struct LinkDTO: Codable, Equatable {
+        var kindRaw: String
+        var eventIdentifier: String
+        var externalIdentifier: String?
+        var contentHash: String?
+        var remoteModifiedAt: Date?
+        var lastSyncedAt: Date
     }
 
     struct DayLogDTO: Codable, Equatable {

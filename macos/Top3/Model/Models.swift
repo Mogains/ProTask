@@ -20,7 +20,10 @@ final class TaskItem {
     var topSlot: Int?
     /// Day key the task was pinned for; the morning reset clears older pins.
     var topDay: String?
+    /// Legacy single event link. Migrated into `links` on launch; no longer written.
     var calendarEventID: String?
+    /// Calendar events this task owns (due / series / pinned). Deleting the task deletes the links.
+    @Relationship(deleteRule: .cascade, inverse: \EventLink.task) var links: [EventLink]? = []
     var createdAt: Date = Date()
     /// Parking Lot only: when the one-hour reminder fires.
     var remindAt: Date?
@@ -73,6 +76,8 @@ final class TaskItem {
         get { RecurrenceRule(encoded: recurrenceRaw) }
         set { recurrenceRaw = newValue?.encoded }
     }
+
+    func link(_ slot: LinkSlot) -> EventLink? { (links ?? []).first { $0.kind.slot == slot } }
 
     var eventInfo: EventTaskInfo {
         EventTaskInfo(title: title, notes: notes, dueDate: dueDate, hasDueTime: hasDueTime, priority: priority,
@@ -131,5 +136,36 @@ final class DayLog {
 
     init(day: String) {
         self.day = day
+    }
+}
+
+/// One calendar event owned by a task, with what we knew about it at the last sync.
+@Model
+final class EventLink {
+    var id: UUID = UUID()
+    var kindRaw: String = LinkKind.due.rawValue
+    /// EKEvent.eventIdentifier
+    var eventIdentifier: String = ""
+    /// EKEvent.calendarItemExternalIdentifier: survives the identifier changes some accounts make when re-syncing
+    var externalIdentifier: String?
+    /// EventFingerprint of title/start/end at the last sync, when both sides agreed
+    var contentHash: String?
+    /// EKEvent.lastModifiedDate at the last sync
+    var remoteModifiedAt: Date?
+    var lastSyncedAt: Date = Date()
+    var task: TaskItem?
+
+    init(kind: LinkKind, eventIdentifier: String) {
+        self.kindRaw = kind.rawValue
+        self.eventIdentifier = eventIdentifier
+    }
+
+    var kind: LinkKind {
+        get { LinkKind(rawValue: kindRaw) ?? .due }
+        set { kindRaw = newValue.rawValue }
+    }
+
+    var state: LinkState {
+        LinkState(kind: kind, contentHash: contentHash, remoteModifiedAt: remoteModifiedAt, lastSyncedAt: lastSyncedAt)
     }
 }
