@@ -65,9 +65,9 @@ struct ContentView: View {
             Spacer()
             accessory
             HStack(spacing: Theme.Space.xxs) {
-                IconButton(symbol: "plus", help: "New task (⌘N)") { model.newTask() }
-                IconButton(symbol: "lightbulb", help: "Park an idea (⇧⌘P)") { model.showQuickPark = true }
-                IconButton(symbol: "sidebar.right", help: showPanel ? "Hide today's calendar" : "Show today's calendar",
+                IconButton(icon: .add, help: "New task (⌘N)") { model.newTask() }
+                IconButton(icon: .quickAdd, help: "Park an idea (⇧⌘P)") { model.showQuickPark = true }
+                IconButton(icon: .panel, help: showPanel ? "Hide today's calendar" : "Show today's calendar",
                            active: showPanel) {
                     withAnimation(Theme.Motion.list) { showPanel.toggle() }
                 }

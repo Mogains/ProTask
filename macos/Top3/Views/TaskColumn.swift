@@ -69,7 +69,7 @@ struct NewTaskButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: Theme.Space.s) {
-                Image(systemName: "plus").font(.system(size: Theme.Size.dragHandle))
+                Icon(.add, size: Theme.Size.dragHandle)
                     .frame(width: Theme.Size.checkbox)
                 Text(title).font(Theme.Fonts.small)
                 Spacer()
@@ -91,7 +91,7 @@ struct AutoSortControl: View {
 
     var body: some View {
         let on = model.isAutoSort(list)
-        IconButton(symbol: on ? "arrow.up.arrow.down" : "hand.point.up.left",
+        IconButton(icon: on ? .autoSort : .manual,
                    help: on
                        ? "Auto sort: due date, then priority, then shortest first. Dragging a task switches to manual."
                        : "Manual order. Click to auto sort by due date, priority, then shortest first.",

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Flat custom sidebar: 28pt rows, subtle fill and a thin left indicator for the selection.
+/// Flat, text-only sidebar: 28pt rows, right-aligned counts, subtle fill and a thin left indicator for the selection.
 struct SidebarView: View {
     @Environment(AppModel.self) private var model
     let tasks: [TaskItem]
@@ -12,7 +12,7 @@ struct SidebarView: View {
             WindowDragArea().frame(height: Theme.Size.header)
 
             VStack(alignment: .leading, spacing: Theme.Space.xxs) {
-                SidebarRow(section: .today, title: "Today", symbol: "star", count: pinnedOpen) { ref in
+                SidebarRow(section: .today, title: "Today", count: pinnedOpen) { ref in
                     model.pin(ref.id)
                 }
 
@@ -21,7 +21,7 @@ struct SidebarView: View {
                     .padding(.top, Theme.Space.l)
                     .padding(.bottom, Theme.Space.xs)
                 ForEach(ListKind.allCases) { list in
-                    SidebarRow(section: .list(list), title: list.title, symbol: list.symbol,
+                    SidebarRow(section: .list(list), title: list.title,
                                count: model.ordered(list, in: tasks).count,
                                onDrop: list == .parkingLot ? nil : { ref in
                                    withAnimation(Theme.Motion.list) { model.move(ref.id, to: list, before: nil, manual: false) }
@@ -29,8 +29,8 @@ struct SidebarView: View {
                 }
 
                 Spacer().frame(height: Theme.Space.l)
-                SidebarRow(section: .calendar, title: "Calendar", symbol: "calendar", count: 0)
-                SidebarRow(section: .done, title: "Done", symbol: "checkmark.circle", count: 0)
+                SidebarRow(section: .calendar, title: "Calendar", count: 0)
+                SidebarRow(section: .done, title: "Done", count: 0)
             }
             .padding(.horizontal, Theme.Space.s)
 
@@ -38,7 +38,6 @@ struct SidebarView: View {
 
             SettingsLink {
                 HStack(spacing: Theme.Space.s) {
-                    Image(systemName: "gearshape").font(.system(size: Theme.Size.icon)).frame(width: Theme.Space.l)
                     Text("Settings").font(Theme.Fonts.small)
                     Spacer()
                 }
@@ -58,7 +57,6 @@ struct SidebarRow: View {
     @Environment(AppModel.self) private var model
     let section: SidebarSection
     let title: String
-    let symbol: String
     let count: Int
     var onDrop: ((TaskRef) -> Void)?
 
@@ -69,9 +67,6 @@ struct SidebarRow: View {
         let selected = model.section == section
         Button { model.section = section } label: {
             HStack(spacing: Theme.Space.s) {
-                Image(systemName: symbol)
-                    .font(.system(size: Theme.Size.icon))
-                    .frame(width: Theme.Space.l)
                 Text(title).font(Theme.Fonts.body)
                 Spacer()
                 if count > 0 {

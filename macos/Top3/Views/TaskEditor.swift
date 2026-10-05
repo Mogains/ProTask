@@ -80,7 +80,7 @@ struct TaskEditor: View {
                         .labelsHidden()
                         .datePickerStyle(.field)
                         .font(Theme.Fonts.small)
-                    IconButton(symbol: "xmark", help: "Remove time") { withAnimation(Theme.Motion.standard) { hasTime = false } }
+                    IconButton(icon: .close, help: "Remove time") { withAnimation(Theme.Motion.standard) { hasTime = false } }
                 } else {
                     Button("Add time") { withAnimation(Theme.Motion.standard) { hasTime = true } }.buttonStyle(.ghost)
                 }
@@ -193,7 +193,7 @@ struct QuickParkSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            InputField(placeholder: "Park an idea…", text: $text, font: Theme.Fonts.input, leadingSymbol: "lightbulb",
+            InputField(placeholder: "Park an idea…", text: $text, font: Theme.Fonts.input, leadingIcon: .quickAdd,
                        bordered: false, focusOnAppear: true) {
                 if model.addIdea(text) { model.showToast("Parked. Reminder in an hour.") }
                 dismiss()

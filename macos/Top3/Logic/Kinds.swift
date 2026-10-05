@@ -14,14 +14,6 @@ enum ListKind: String, CaseIterable, Codable, Identifiable {
         }
     }
 
-    var symbol: String {
-        switch self {
-        case .haveTo: "checklist"
-        case .niceTo: "tray"
-        case .parkingLot: "lightbulb"
-        }
-    }
-
     /// The two regular lists (not the Parking Lot).
     static let taskLists: [ListKind] = [.haveTo, .niceTo]
 }

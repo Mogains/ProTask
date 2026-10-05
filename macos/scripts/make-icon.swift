@@ -1,4 +1,4 @@
-// Draws the app icon: a near-black rounded square with three grey checklist rows.
+// Draws the ProTask app icon: a near-black rounded square with the grey ProTask mark.
 // Usage: swift scripts/make-icon.swift Top3/Resources/Assets.xcassets/AppIcon.appiconset
 import AppKit
 
@@ -19,7 +19,7 @@ func draw(size: Int) -> Data {
     let path = CGPath(roundedRect: body, cornerWidth: 185 * k, cornerHeight: 185 * k, transform: nil)
     ctx.setShadow(offset: CGSize(width: 0, height: -10 * k), blur: 24 * k, color: NSColor.black.withAlphaComponent(0.35).cgColor)
     ctx.addPath(path)
-    ctx.setFillColor(NSColor(white: 0.11, alpha: 1).cgColor)
+    ctx.setFillColor(NSColor(srgbRed: 0x14 / 255, green: 0x14 / 255, blue: 0x16 / 255, alpha: 1).cgColor)
     ctx.fillPath()
     ctx.setShadow(offset: .zero, blur: 0, color: nil)
     ctx.addPath(path)
@@ -27,37 +27,19 @@ func draw(size: Int) -> Data {
     ctx.setLineWidth(4 * k)
     ctx.strokePath()
 
-    // Three rows: circle + line. The first is checked.
-    let rows: [CGFloat] = [640, 500, 360]
-    for (i, y) in rows.enumerated() {
-        let cy = y * k
-        let r = 44 * k
-        let cx = 300 * k
-        let circle = CGRect(x: cx - r, y: cy - r, width: 2 * r, height: 2 * r)
-        if i == 0 {
-            ctx.setFillColor(NSColor(white: 0.82, alpha: 1).cgColor)
-            ctx.fillEllipse(in: circle)
-            ctx.setStrokeColor(NSColor(white: 0.11, alpha: 1).cgColor)
-            ctx.setLineWidth(14 * k)
-            ctx.setLineCap(.round)
-            ctx.setLineJoin(.round)
-            ctx.move(to: CGPoint(x: cx - 20 * k, y: cy + 1 * k))
-            ctx.addLine(to: CGPoint(x: cx - 4 * k, y: cy - 16 * k))
-            ctx.addLine(to: CGPoint(x: cx + 22 * k, y: cy + 18 * k))
-            ctx.strokePath()
-        } else {
-            ctx.setStrokeColor(NSColor(white: 0.55, alpha: 1).cgColor)
-            ctx.setLineWidth(12 * k)
-            ctx.strokeEllipse(in: circle.insetBy(dx: 6 * k, dy: 6 * k))
-        }
-        let lineWidths: [CGFloat] = [330, 270, 210]
-        ctx.setStrokeColor(NSColor(white: i == 0 ? 0.82 : 0.45, alpha: 1).cgColor)
-        ctx.setLineWidth(30 * k)
-        ctx.setLineCap(.round)
-        ctx.move(to: CGPoint(x: 400 * k, y: cy))
-        ctx.addLine(to: CGPoint(x: (400 + lineWidths[i]) * k, y: cy))
-        ctx.strokePath()
-    }
+    // The ProTask mark: a square outline with one solid corner block (same glyph as the "today" icon).
+    let side: CGFloat = 430 * k
+    let stroke: CGFloat = 50 * k
+    let mark = CGRect(x: 512 * k - side / 2, y: 512 * k - side / 2, width: side, height: side)
+    ctx.setStrokeColor(NSColor(srgbRed: 0xD4 / 255, green: 0xD4 / 255, blue: 0xD8 / 255, alpha: 1).cgColor)
+    ctx.setLineWidth(stroke)
+    ctx.setLineJoin(.miter)
+    ctx.addPath(CGPath(roundedRect: mark.insetBy(dx: stroke / 2, dy: stroke / 2), cornerWidth: 18 * k, cornerHeight: 18 * k, transform: nil))
+    ctx.strokePath()
+    let block: CGFloat = 112 * k
+    let inset: CGFloat = stroke + 48 * k
+    ctx.setFillColor(NSColor(srgbRed: 0x8A / 255, green: 0x8A / 255, blue: 0x90 / 255, alpha: 1).cgColor)
+    ctx.fill(CGRect(x: mark.maxX - inset - block, y: mark.maxY - inset - block, width: block, height: block))
     NSGraphicsContext.restoreGraphicsState()
     return rep.representation(using: .png, properties: [:])!
 }

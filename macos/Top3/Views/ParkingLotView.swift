@@ -9,7 +9,7 @@ struct ParkingLotView: View {
         let ideas = model.ordered(.parkingLot, in: tasks)
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.l) {
-                InputField(placeholder: "Park an idea and press Return", text: $text, leadingSymbol: "plus",
+                InputField(placeholder: "Park an idea and press Return", text: $text, leadingIcon: .add,
                            focusOnAppear: true) {
                     if model.addIdea(text) { withAnimation(Theme.Motion.list) { text = "" } }
                 }

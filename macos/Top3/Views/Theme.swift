@@ -59,6 +59,7 @@ enum Theme {
         static let header: CGFloat = 40
         static let checkbox: CGFloat = 14
         static let icon: CGFloat = 12
+        static let sidebarIcon: CGFloat = 14
         static let iconButton: CGFloat = 24
         static let sidebarWidth: CGFloat = 208
         static let panelWidth: CGFloat = 264

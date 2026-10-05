@@ -29,10 +29,12 @@ struct ProTaskApp: App {
                 .modelContainer(model.container)
         }
 
-        MenuBarExtra("ProTask", systemImage: "checklist", isInserted: $showMenuBar) {
+        MenuBarExtra(isInserted: $showMenuBar) {
             MenuBarQuickAdd()
                 .environment(model)
                 .modelContainer(model.container)
+        } label: {
+            Image(IconName.mark.assetName).renderingMode(.template).accessibilityLabel("ProTask")
         }
         .menuBarExtraStyle(.window)
     }

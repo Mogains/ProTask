@@ -39,7 +39,7 @@ private struct CheckShape: Shape {
 
 /// Small icon button with an optional tiny label. Ghost style: only a faint fill on hover.
 struct IconButton: View {
-    let symbol: String
+    let icon: IconName
     let help: String
     var label: String?
     var active = false
@@ -50,8 +50,7 @@ struct IconButton: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: Theme.Space.xs) {
-                Image(systemName: symbol)
-                    .font(.system(size: Theme.Size.icon))
+                Icon(icon)
                 if let label { Text(label).font(Theme.Fonts.caption) }
             }
             .padding(.horizontal, label == nil ? 0 : Theme.Space.s)
@@ -122,7 +121,7 @@ struct ActionsMenu<Content: View>: View {
 
     var body: some View {
         Menu(content: content) {
-            Image(systemName: "ellipsis").font(.system(size: Theme.Size.icon))
+            Icon(.more)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
@@ -140,7 +139,7 @@ struct InputField: View {
     let placeholder: String
     @Binding var text: String
     var font: Font = Theme.Fonts.body
-    var leadingSymbol: String?
+    var leadingIcon: IconName?
     var bordered = true
     var axis: Axis = .horizontal
     var focusOnAppear = false
@@ -150,9 +149,8 @@ struct InputField: View {
 
     var body: some View {
         HStack(spacing: Theme.Space.s) {
-            if let leadingSymbol {
-                Image(systemName: leadingSymbol)
-                    .font(.system(size: Theme.Size.icon))
+            if let leadingIcon {
+                Icon(leadingIcon)
                     .foregroundStyle(Theme.Palette.textTertiary)
             }
             TextField("", text: $text, prompt: Text(placeholder).foregroundStyle(Theme.Palette.textTertiary), axis: axis)

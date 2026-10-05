@@ -18,8 +18,7 @@ struct TaskRow: View {
 
         HStack(spacing: Theme.Space.s) {
             if showHandle {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: Theme.Size.dragHandle))
+                Icon(.drag, size: Theme.Size.icon)
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .frame(width: Theme.Size.dragHandle)
                     .opacity(hovering && !task.isCompleted ? 1 : 0)
@@ -27,8 +26,7 @@ struct TaskRow: View {
             }
 
             if task.isIdea {
-                Image(systemName: "lightbulb")
-                    .font(.system(size: Theme.Size.icon))
+                Icon(.idea)
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .frame(width: Theme.Size.checkbox)
             } else {
@@ -45,8 +43,7 @@ struct TaskRow: View {
                 .truncationMode(.tail)
 
             if !task.notes.isEmpty {
-                Image(systemName: "text.alignleft")
-                    .font(.system(size: Theme.Size.dragHandle))
+                Icon(.notes, size: Theme.Size.dragHandle)
                     .foregroundStyle(Theme.Palette.textTertiary)
                     .help(task.notes)
             }
@@ -77,16 +74,16 @@ struct TaskRow: View {
         let reveal = hovering || selected
         if task.isIdea {
             HStack(spacing: 0) {
-                IconButton(symbol: "checklist", help: "Send to Have to do") { withAnimation(Theme.Motion.list) { model.send(task, to: .haveTo) } }
-                IconButton(symbol: "tray", help: "Send to Nice to do") { withAnimation(Theme.Motion.list) { model.send(task, to: .niceTo) } }
-                IconButton(symbol: "clock.arrow.circlepath", help: "Keep in Parking Lot, remind again in an hour") { model.snooze(task) }
-                IconButton(symbol: "trash", help: "Delete") { withAnimation(Theme.Motion.list) { model.delete(task) } }
+                IconButton(icon: .send, help: "Send to Have to do", label: "Have") { withAnimation(Theme.Motion.list) { model.send(task, to: .haveTo) } }
+                IconButton(icon: .send, help: "Send to Nice to do", label: "Nice") { withAnimation(Theme.Motion.list) { model.send(task, to: .niceTo) } }
+                IconButton(icon: .later, help: "Keep in Parking Lot, remind again in an hour") { model.snooze(task) }
+                IconButton(icon: .delete, help: "Delete") { withAnimation(Theme.Motion.list) { model.delete(task) } }
             }
             .opacity(reveal ? 1 : 0)
         } else {
             HStack(spacing: 0) {
                 if !task.isCompleted {
-                    IconButton(symbol: task.topSlot != nil ? "star.fill" : "star",
+                    IconButton(icon: .today,
                                help: task.topSlot != nil ? "Remove from Top 3" : "Add to Top 3",
                                active: task.topSlot != nil) {
                         withAnimation(Theme.Motion.list) { model.togglePin(task) }
@@ -131,12 +128,16 @@ struct RowMeta: View {
                 }
             } else {
                 if task.priority != .medium {
-                    Text(task.priority.title)
+                    Icon(task.priority == .high ? .priority3 : .priority1, size: Theme.Size.icon)
                         .foregroundStyle(task.priority == .high ? Theme.Palette.textSecondary : Theme.Palette.textTertiary)
+                        .help("\(task.priority.title) priority")
                 }
                 if let due = Fmt.due(task, today: model.today) {
-                    Text(due.text)
-                        .foregroundStyle(due.overdue ? Theme.Palette.text : Theme.Palette.textSecondary)
+                    HStack(spacing: Theme.Space.xs) {
+                        Icon(.due, size: Theme.Size.dragHandle)
+                        Text(due.text)
+                    }
+                    .foregroundStyle(due.overdue ? Theme.Palette.text : Theme.Palette.textSecondary)
                 }
                 if let est = Fmt.minutes(task.estimateMinutes) {
                     Text(est).foregroundStyle(Theme.Palette.textTertiary)

@@ -472,6 +472,14 @@ final class AppModel {
         if env["TOP3_APPEARANCE"] == "light" { NSApp.appearance = NSAppearance(named: .aqua) }
         if env["TOP3_APPEARANCE"] == "dark" { NSApp.appearance = NSAppearance(named: .darkAqua) }
         try? await Task.sleep(for: .seconds(2))
+        for appearance in [NSAppearance.Name.darkAqua, .aqua] {
+            let renderer = ImageRenderer(content: IconSheet().environment(\.colorScheme, appearance == .darkAqua ? .dark : .light))
+            renderer.scale = 3
+            if let tiff = renderer.nsImage?.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
+                try? rep.representation(using: .png, properties: [:])?
+                    .write(to: URL(fileURLWithPath: dir).appending(path: "icons-\(appearance == .darkAqua ? "dark" : "light").png"))
+            }
+        }
         let shots: [(String, SidebarSection)] = [("today", .today), ("haveto", .list(.haveTo)), ("parking", .list(.parkingLot)),
                                                   ("done", .done), ("calendar", .calendar)]
         for (name, sec) in shots {

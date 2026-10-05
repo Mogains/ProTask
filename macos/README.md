@@ -66,6 +66,13 @@ The Xcode project is generated from `project.yml` with [XcodeGen](https://github
 
 To redraw the app icon: `swift scripts/make-icon.swift Top3/Resources/Assets.xcassets/AppIcon.appiconset`.
 
+### Icons
+
+ProTask uses its own icon set, not SF Symbols. Each icon is a hand-written 16×16 SVG (1.25 stroke, square caps, no fills except tiny dots) stored as a template image in `Top3/Resources/Assets.xcassets/Icons`, so it tints with the theme. Views draw them with `Icon(.name)` from `Top3/Views/Icon.swift`.
+
+- Edit or add icons in `scripts/make-icons.py`, then run `python3 scripts/make-icons.py`.
+- `scripts/check-icons.sh` fails if any `systemName`, `systemImage` or `Label(` appears in the code. `package.sh` runs it before every release build.
+
 ## Keyboard shortcuts
 
 | Shortcut | Action |
@@ -121,7 +128,7 @@ macos/
     Logic/                    pure logic, also compiled into the tests
     Services/                 AppModel (all changes), EventKit and notification services
     Views/                    SwiftUI views; Theme.swift holds every design token, Components.swift the custom controls
-    Resources/                icon, accent color, Inter font
+    Resources/                app icon, custom icon set, accent color, Inter font
   Top3Tests/                  XCTest unit tests
-  scripts/                    package.sh (.dmg), make-icon.swift
+  scripts/                    package.sh (.dmg), make-icon.swift (app icon), make-icons.py (icon set), check-icons.sh
 ```

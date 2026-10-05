@@ -12,7 +12,7 @@ struct MenuBarQuickAdd: View {
     var body: some View {
         let ideas = tasks.filter(\.isIdea).prefix(5)
         VStack(alignment: .leading, spacing: 0) {
-            InputField(placeholder: "Park an idea…", text: $text, leadingSymbol: "lightbulb", bordered: false,
+            InputField(placeholder: "Park an idea…", text: $text, leadingIcon: .quickAdd, bordered: false,
                        focusOnAppear: true) {
                 guard model.addIdea(text) else { return }
                 text = ""
