@@ -626,15 +626,19 @@ final class AppModel {
     }
 
     func writeWidgetSnapshot() {
-        let pins = allTasks().filter { $0.topSlot != nil }
+        let tasks = allTasks()
+        let pins = tasks.filter { $0.topSlot != nil }
+        let ideas = ordered(.parkingLot, in: tasks)
         let snapshot = WidgetSnapshot(updated: Date(), day: today,
                                       items: pins.map { .init(slot: $0.topSlot ?? 0, title: $0.title, done: $0.isCompleted) }
-                                          .sorted { $0.slot < $1.slot })
+                                          .sorted { $0.slot < $1.slot },
+                                      ideas: ideas.prefix(4).map(\.title), ideaCount: ideas.count)
         #if DEBUG
         // Screenshot runs use a throwaway store; don't overwrite the real widget file.
         if ProcessInfo.processInfo.environment["TOP3_STORE_PATH"] != nil { return }
         #endif
-        guard snapshot.items != lastWidgetSnapshot?.items || snapshot.day != lastWidgetSnapshot?.day else { return }
+        guard snapshot.items != lastWidgetSnapshot?.items || snapshot.day != lastWidgetSnapshot?.day
+                || snapshot.ideas != lastWidgetSnapshot?.ideas || snapshot.ideaCount != lastWidgetSnapshot?.ideaCount else { return }
         lastWidgetSnapshot = snapshot
         snapshot.write()
         WidgetCenter.shared.reloadAllTimelines()

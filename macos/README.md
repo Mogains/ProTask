@@ -24,7 +24,7 @@ A native macOS goals and to-do app built around one idea: every day, pick your *
 | Tags | `#tag` in a title or Tags… in the row menu. The sidebar's Tags section filters the current view. |
 | Menu bar | Shows Top 3 progress like "2/3"; the dropdown checks items off and quick-adds. |
 | Weekly review | Completed this week vs last, completion rate, streak, focus time, actual vs estimated, full Top 3 days, and one sparkline. |
-| Desktop widget | Small and medium widgets with today's Top 3. |
+| Desktop widget | Small widget with today's Top 3; medium adds the newest Parking Lot ideas. |
 | Export and backup | File menu: JSON backup, Markdown export, import from JSON. A daily backup keeps the newest seven. |
 
 The left sidebar can be hidden with Control-Command-S or the header button.

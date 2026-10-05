@@ -11,6 +11,9 @@ struct WidgetSnapshot: Codable, Equatable {
     var updated: Date
     var day: String
     var items: [Item]
+    /// Newest Parking Lot ideas (titles) and the total count. Optional so older files still decode.
+    var ideas: [String]? = nil
+    var ideaCount: Int? = nil
 
     var doneCount: Int { items.filter(\.done).count }
 
@@ -42,5 +45,5 @@ struct WidgetSnapshot: Codable, Equatable {
         Item(slot: 1, title: "Finish quarterly report", done: false),
         Item(slot: 2, title: "Pay rent", done: true),
         Item(slot: 3, title: "Gym", done: false),
-    ])
+    ], ideas: ["Newsletter for the team", "Try a standing desk", "Weekend trip ideas"], ideaCount: 5)
 }

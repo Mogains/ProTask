@@ -37,8 +37,30 @@ struct Top3WidgetView: View {
     let entry: Top3Entry
 
     var body: some View {
-        let s = entry.snapshot
-        VStack(alignment: .leading, spacing: family == .systemSmall ? 6 : 8) {
+        Group {
+            if family == .systemSmall {
+                Top3Column(snapshot: entry.snapshot, compact: true)
+            } else {
+                HStack(alignment: .top, spacing: 14) {
+                    Top3Column(snapshot: entry.snapshot, compact: false)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Rectangle().fill(W.border).frame(width: 1)
+                    ParkingColumn(snapshot: entry.snapshot)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+        .containerBackground(W.background, for: .widget)
+    }
+}
+
+private struct Top3Column: View {
+    let snapshot: WidgetSnapshot
+    let compact: Bool
+
+    var body: some View {
+        let s = snapshot
+        VStack(alignment: .leading, spacing: compact ? 6 : 8) {
             HStack {
                 Text("TOP 3").font(W.font(10, true)).tracking(0.6).foregroundStyle(W.tertiary)
                 Spacer()
@@ -56,7 +78,7 @@ struct Top3WidgetView: View {
                         }
                         .frame(width: 12, height: 12)
                         Text(item.title)
-                            .font(W.font(family == .systemSmall ? 11 : 12))
+                            .font(W.font(compact ? 11 : 12))
                             .foregroundStyle(item.done ? W.tertiary : W.text)
                             .strikethrough(item.done, color: W.tertiary)
                             .lineLimit(1)
@@ -69,12 +91,43 @@ struct Top3WidgetView: View {
                 }
             }
             Spacer(minLength: 0)
-            if family != .systemSmall {
+            if !compact {
                 Text(s.items.isEmpty ? "Pick your Top 3 in ProTask" : "Updated \(s.updated.formatted(date: .omitted, time: .shortened))")
                     .font(W.font(10)).foregroundStyle(W.tertiary)
             }
         }
-        .containerBackground(W.background, for: .widget)
+    }
+}
+
+/// Newest Parking Lot ideas, so they stay in view until they're sent to a list.
+private struct ParkingColumn: View {
+    let snapshot: WidgetSnapshot
+
+    var body: some View {
+        let ideas = snapshot.ideas ?? []
+        let count = snapshot.ideaCount ?? ideas.count
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("PARKING LOT").font(W.font(10, true)).tracking(0.6).foregroundStyle(W.tertiary)
+                Spacer()
+                Text("\(count)").font(W.font(10, true)).foregroundStyle(W.tertiary)
+            }
+            if ideas.isEmpty {
+                Text("No ideas parked").font(W.font(11)).foregroundStyle(W.tertiary)
+            } else {
+                ForEach(Array(ideas.prefix(3).enumerated()), id: \.offset) { _, title in
+                    HStack(spacing: 6) {
+                        Image("icon-idea").resizable().renderingMode(.template)
+                            .foregroundStyle(W.tertiary).frame(width: 12, height: 12)
+                        Text(title).font(W.font(12)).foregroundStyle(W.secondary).lineLimit(1)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+            if count > 3 {
+                Text("+\(count - 3) more").font(W.font(10)).foregroundStyle(W.tertiary)
+            }
+        }
     }
 }
 
@@ -85,7 +138,7 @@ struct ProTaskWidget: Widget {
             Top3WidgetView(entry: entry)
         }
         .configurationDisplayName("Top 3")
-        .description("Today's three, with what's done.")
+        .description("Today's three, with what's done. Medium adds your Parking Lot.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
 }
