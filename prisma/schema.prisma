@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A goal / to-do item.
+model Task {
+  id              String    @id @default(cuid())
+  title           String
+  notes           String?
+  dueAt           DateTime?
+  /// false = date-only due date (stored as local midnight)
+  hasDueTime      Boolean   @default(false)
+  /// "HIGH" | "MED" | "LOW"
+  priority        String    @default("MED")
+  estimateMinutes Int?
+  completed       Boolean   @default(false)
+  completedAt     DateTime?
+  /// "HAVE_TO" | "NICE_TO". A task in the Top 3 keeps its list so it can return there.
+  list            String
+  /// Order within the list (lower = higher up)
+  position        Float
+  /// 1, 2 or 3 when pinned to Top 3. Unique, so a slot can only hold one task.
+  topSlot         Int?      @unique
+  /// "YYYY-MM-DD" day the task was pinned for; used by the morning reset
+  topDate         String?
+  calendarEventId String?
+  syncError       String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([list, position])
+}
+
+/// Per-list sort mode.
+model ListSetting {
+  /// "HAVE_TO" | "NICE_TO"
+  list     String  @id
+  autoSort Boolean @default(true)
+}
+
+/// One row per day. Drives the streak and the morning "pick your Top 3" prompt.
+model DayLog {
+  /// "YYYY-MM-DD"
+  date            String  @id
+  top3Complete    Boolean @default(false)
+  promptDismissed Boolean @default(false)
+}
+
+/// Single-row store for the connected Google account.
+model GoogleAccount {
+  id           Int       @id @default(1)
+  email        String?
+  accessToken  String?
+  refreshToken String
+  expiresAt    DateTime?
+  /// id of the dedicated "Top 3" calendar
+  calendarId   String?
+}

@@ -1,0 +1,46 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html { color-scheme: light; }
+html.dark { color-scheme: dark; }
+
+body {
+  @apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100;
+}
+
+@keyframes check-pop {
+  0% { transform: scale(0.6); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes complete-out {
+  to { opacity: 0; transform: translateX(16px) scale(0.97); }
+}
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes confetti-fall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0); opacity: 1; }
+  100% { transform: translate3d(var(--dx), 105vh, 0) rotate(720deg); opacity: 0.8; }
+}
+@keyframes slot-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(251 191 36 / 0); }
+  50% { box-shadow: 0 0 0 6px rgb(251 191 36 / 0.25); }
+}
+
+.animate-check-pop { animation: check-pop 0.35s ease-out; }
+.check-path { stroke-dasharray: 16; stroke-dashoffset: 16; animation: draw 0.3s 0.05s ease-out forwards; }
+.animate-complete-out { animation: complete-out 0.3s ease-in 0.25s forwards; }
+.animate-toast-in { animation: toast-in 0.2s ease-out; }
+.animate-slot-glow { animation: slot-glow 1.6s ease-in-out 2; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+}
