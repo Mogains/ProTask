@@ -13,12 +13,14 @@ struct TaskEditor: View {
     @State private var dueDate = Calendar.current.startOfDay(for: Date())
     @State private var hasTime = false
     @State private var estimate = ""
+    @State private var detectDates = true
+    @State private var originalTitle = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: Theme.Space.s) {
-                InputField(placeholder: "Task title", text: $title, font: Theme.Fonts.input, bordered: false,
-                           focusOnAppear: true, onSubmit: save)
+                SmartTaskField(placeholder: "Task title", text: $title, detectDates: $detectDates, font: Theme.Fonts.input,
+                               bordered: false, focusOnAppear: true, onSubmit: save)
                 InputField(placeholder: "Add notes", text: $notes, font: Theme.Fonts.small, bordered: false, axis: .vertical)
                     .lineLimit(1...6)
             }
@@ -118,6 +120,7 @@ struct TaskEditor: View {
         list = request.list == .parkingLot && request.task == nil ? .haveTo : request.list
         if let t = request.task {
             title = t.title
+            originalTitle = t.title
             notes = t.notes
             list = t.list
             priority = t.priority
@@ -132,11 +135,20 @@ struct TaskEditor: View {
 
     private func save() {
         guard !title.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        // Natural language in the title fills the fields (only when the title was typed or changed here).
+        var finalTitle = title
+        if list != .parkingLot && title != originalTitle {
+            let p = TaskParser.parse(title, detectDates: detectDates)
+            finalTitle = p.title
+            if let d = p.dueDate { hasDue = true; dueDate = d; hasTime = p.hasDueTime }
+            if let pr = p.priority { priority = pr }
+            if let m = p.estimateMinutes { estimate = String(m) }
+        }
         var due: Date? = nil
         if hasDue && list != .parkingLot {
             due = hasTime ? dueDate : Calendar.current.startOfDay(for: dueDate)
         }
-        let draft = TaskDraft(title: title, notes: notes, list: list, priority: priority, dueDate: due,
+        let draft = TaskDraft(title: finalTitle, notes: notes, list: list, priority: priority, dueDate: due,
                               hasDueTime: hasDue && hasTime, estimateMinutes: Int(estimate.trimmingCharacters(in: .whitespaces)))
         if let t = request.task { model.update(t, with: draft) } else { model.addTask(draft) }
         dismiss()

@@ -83,7 +83,7 @@ enum Theme {
         static let propertyLabel: CGFloat = 76
         static let progressSegment: CGFloat = 10
         static let capturePanelWidth: CGFloat = 560
-        static let capturePanelHeight: CGFloat = 92
+        static let capturePanelHeight: CGFloat = 112
     }
 
     // MARK: Type

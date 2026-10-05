@@ -143,6 +143,8 @@ struct InputField: View {
     var bordered = true
     var axis: Axis = .horizontal
     var focusOnAppear = false
+    /// Return true to swallow a Backspace (used to dismiss a parsed date).
+    var onDeleteKey: (() -> Bool)?
     var onSubmit: () -> Void = {}
 
     @FocusState private var focused: Bool
@@ -160,6 +162,7 @@ struct InputField: View {
                 .focused($focused)
                 .focusEffectDisabled()
                 .onSubmit(onSubmit)
+                .onKeyPress(.delete) { onDeleteKey?() == true ? .handled : .ignored }
         }
         .padding(.horizontal, bordered ? Theme.Space.s : 0)
         .padding(.vertical, bordered ? Theme.Space.s - Theme.Space.xxs : 0)

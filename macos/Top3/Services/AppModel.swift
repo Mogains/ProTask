@@ -372,11 +372,14 @@ final class AppModel {
 
     /// Saves text from a quick-add field, routed by its prefix ("~" Nice to do, "?" Parking Lot).
     @discardableResult
-    func capture(_ raw: String) -> Bool {
+    func capture(_ raw: String, detectDates: Bool = true) -> Bool {
         let route = CaptureRouting.route(raw)
         guard !route.text.isEmpty else { return false }
         if route.list == .parkingLot { return addIdea(route.text) }
-        guard addTask(TaskDraft(title: route.text, list: route.list)) != nil else { return false }
+        let p = TaskParser.parse(route.text, detectDates: detectDates)
+        let draft = TaskDraft(title: p.title, list: route.list, priority: p.priority ?? .medium, dueDate: p.dueDate,
+                              hasDueTime: p.hasDueTime, estimateMinutes: p.estimateMinutes)
+        guard addTask(draft) != nil else { return false }
         showToast("Added to \(route.list.title).")
         return true
     }

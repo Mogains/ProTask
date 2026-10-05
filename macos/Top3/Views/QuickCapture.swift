@@ -58,13 +58,14 @@ struct QuickCaptureView: View {
     @Environment(AppModel.self) private var model
     let onClose: () -> Void
     @State private var text = ""
+    @State private var detectDates = true
 
     var body: some View {
         let route = CaptureRouting.route(text)
         VStack(alignment: .leading, spacing: Theme.Space.s) {
-            InputField(placeholder: "Add a task", text: $text, font: Theme.Fonts.input, leadingIcon: .add,
-                       bordered: false, focusOnAppear: true) {
-                if model.capture(text) { onClose() }
+            SmartTaskField(placeholder: "Add a task", text: $text, detectDates: $detectDates, font: Theme.Fonts.input,
+                           leadingIcon: .add, bordered: false, focusOnAppear: true) {
+                if model.capture(text, detectDates: detectDates) { onClose() }
             }
             HStack(spacing: Theme.Space.s) {
                 Text("To \(route.list.title)")
