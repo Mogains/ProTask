@@ -18,7 +18,7 @@ Requires macOS 14 (Sonoma) or later.
 - **Daily rhythm.** A morning planning screen, an evening wrap-up and a weekly review.
 - **Focus timer.** 25 or 50 minutes, or your own length, on any task.
 - **Waiting On.** Track things you've handed off and get a nudge to follow up.
-- **Menu bar and widget.** See "2/3" progress in the menu bar. The desktop widget shows your Top 3 and Parking Lot.
+- **Menu bar and widget.** See "2/3" progress in the menu bar. Desktop widgets show your Top 3 and Parking Lot.
 - **Backups.** Automatic daily backups, plus JSON and Markdown export.
 
 ## Install

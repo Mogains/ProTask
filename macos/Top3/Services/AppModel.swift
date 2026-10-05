@@ -632,7 +632,7 @@ final class AppModel {
         let snapshot = WidgetSnapshot(updated: Date(), day: today,
                                       items: pins.map { .init(slot: $0.topSlot ?? 0, title: $0.title, done: $0.isCompleted) }
                                           .sorted { $0.slot < $1.slot },
-                                      ideas: ideas.prefix(4).map(\.title), ideaCount: ideas.count)
+                                      ideas: ideas.prefix(6).map(\.title), ideaCount: ideas.count)
         #if DEBUG
         // Screenshot runs use a throwaway store; don't overwrite the real widget file.
         if ProcessInfo.processInfo.environment["TOP3_STORE_PATH"] != nil { return }

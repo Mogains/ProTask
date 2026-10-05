@@ -40,6 +40,13 @@ struct Top3WidgetView: View {
         Group {
             if family == .systemSmall {
                 Top3Column(snapshot: entry.snapshot, compact: true)
+            } else if family == .systemLarge {
+                VStack(alignment: .leading, spacing: 12) {
+                    Top3Column(snapshot: entry.snapshot, compact: false, showFooter: false)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Rectangle().fill(W.border).frame(height: 1)
+                    ParkingColumn(snapshot: entry.snapshot, limit: 6)
+                }
             } else {
                 HStack(alignment: .top, spacing: 14) {
                     Top3Column(snapshot: entry.snapshot, compact: false)
@@ -57,6 +64,7 @@ struct Top3WidgetView: View {
 private struct Top3Column: View {
     let snapshot: WidgetSnapshot
     let compact: Bool
+    var showFooter = true
 
     var body: some View {
         let s = snapshot
@@ -90,8 +98,8 @@ private struct Top3Column: View {
                     }
                 }
             }
-            Spacer(minLength: 0)
-            if !compact {
+            if showFooter { Spacer(minLength: 0) }
+            if !compact && showFooter {
                 Text(s.items.isEmpty ? "Pick your Top 3 in ProTask" : "Updated \(s.updated.formatted(date: .omitted, time: .shortened))")
                     .font(W.font(10)).foregroundStyle(W.tertiary)
             }
@@ -102,11 +110,13 @@ private struct Top3Column: View {
 /// Newest Parking Lot ideas, so they stay in view until they're sent to a list.
 private struct ParkingColumn: View {
     let snapshot: WidgetSnapshot
+    var limit = 3
+    var compact = false
 
     var body: some View {
         let ideas = snapshot.ideas ?? []
         let count = snapshot.ideaCount ?? ideas.count
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: compact ? 6 : 8) {
             HStack {
                 Text("PARKING LOT").font(W.font(10, true)).tracking(0.6).foregroundStyle(W.tertiary)
                 Spacer()
@@ -115,30 +125,59 @@ private struct ParkingColumn: View {
             if ideas.isEmpty {
                 Text("No ideas parked").font(W.font(11)).foregroundStyle(W.tertiary)
             } else {
-                ForEach(Array(ideas.prefix(3).enumerated()), id: \.offset) { _, title in
+                ForEach(Array(ideas.prefix(limit).enumerated()), id: \.offset) { _, title in
                     HStack(spacing: 6) {
                         Image("icon-idea").resizable().renderingMode(.template)
                             .foregroundStyle(W.tertiary).frame(width: 12, height: 12)
-                        Text(title).font(W.font(12)).foregroundStyle(W.secondary).lineLimit(1)
+                        Text(title).font(W.font(compact ? 11 : 12)).foregroundStyle(W.secondary).lineLimit(1)
                     }
                 }
             }
             Spacer(minLength: 0)
-            if count > 3 {
-                Text("+\(count - 3) more").font(W.font(10)).foregroundStyle(W.tertiary)
+            if count > limit {
+                Text("+\(count - limit) more").font(W.font(10)).foregroundStyle(W.tertiary)
             }
         }
     }
 }
 
-@main
-struct ProTaskWidget: Widget {
+/// Parking Lot on its own, for when you want ideas in view without the Top 3.
+struct ParkingLotWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: Top3Entry
+
+    var body: some View {
+        ParkingColumn(snapshot: entry.snapshot, limit: 4, compact: family == .systemSmall)
+            .containerBackground(W.background, for: .widget)
+    }
+}
+
+struct Top3Widget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "ProTaskTop3", provider: Top3Provider()) { entry in
             Top3WidgetView(entry: entry)
         }
         .configurationDisplayName("Top 3")
-        .description("Today's three, with what's done. Medium adds your Parking Lot.")
+        .description("Today's three, with what's done. Medium and large add your Parking Lot.")
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+    }
+}
+
+struct ParkingLotWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "ProTaskParkingLot", provider: Top3Provider()) { entry in
+            ParkingLotWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Parking Lot")
+        .description("Your newest parked ideas.")
         .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+@main
+struct ProTaskWidgets: WidgetBundle {
+    var body: some Widget {
+        Top3Widget()
+        ParkingLotWidget()
     }
 }
