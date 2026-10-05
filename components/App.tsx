@@ -1,12 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createTask, deleteTask, toggleComplete, updateTask } from "@/app/actions";
+import {
+  closestCorners,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  MouseSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragOverEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
+import { createTask, deleteTask, reorderList, toggleComplete, updateTask } from "@/app/actions";
 import { dailyCompletion } from "@/lib/stats";
 import { normalizeInput } from "@/lib/taskInput";
 import { isListKind, LISTS, type ListKind, type Snapshot, type Task, type TaskInput } from "@/lib/types";
 import { DoneSection } from "./DoneSection";
 import { Header } from "./Header";
+import { TaskCard } from "./TaskCard";
 import { TaskForm } from "./TaskForm";
 import { TaskList } from "./TaskList";
 import { Toast } from "./Toast";
@@ -20,6 +35,16 @@ const patchTask = (id: string, patch: Partial<Task>) => (s: Snapshot): Snapshot 
 function isTyping(e: KeyboardEvent) {
   const el = e.target as HTMLElement | null;
   return !!el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
+}
+
+type Order = Record<ListKind, string[]>;
+
+function containerOf(id: string, order: Order): ListKind | null {
+  if (id.startsWith("list:")) {
+    const l = id.slice(5);
+    return isListKind(l) ? l : null;
+  }
+  return LISTS.find((l) => order[l].includes(id)) ?? null;
 }
 
 export default function App({ initial }: { initial: Snapshot }) {
@@ -89,6 +114,76 @@ export default function App({ initial }: { initial: Snapshot }) {
     }
   }
 
+  // ---------- drag and drop ----------
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const byId = useMemo(() => new Map(tasks.map((t) => [t.id, t])), [tasks]);
+  const baseOrder = useMemo<Order>(() => ({ HAVE_TO: lists.HAVE_TO.map((t) => t.id), NICE_TO: lists.NICE_TO.map((t) => t.id) }), [lists]);
+  const [preview, setPreview] = useState<Order | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const order = preview ?? baseOrder;
+  const shown = (l: ListKind) => order[l].map((id) => byId.get(id)).filter((t): t is Task => !!t);
+
+  function onDragStart({ active }: DragStartEvent) {
+    setActiveId(String(active.id));
+    setPreview(baseOrder);
+  }
+
+  // Move the dragged card into the other list as soon as it hovers there, so the drop preview is live.
+  function onDragOver({ active, over }: DragOverEvent) {
+    if (!over) return;
+    const aid = String(active.id);
+    const oid = String(over.id);
+    setPreview((prev) => {
+      if (!prev) return prev;
+      const from = containerOf(aid, prev);
+      const to = containerOf(oid, prev);
+      if (!from || !to || from === to) return prev;
+      const toIds = [...prev[to]];
+      let idx = oid.startsWith("list:") ? toIds.length : toIds.indexOf(oid);
+      const r = active.rect.current.translated;
+      if (idx >= 0 && r && r.top > over.rect.top + over.rect.height / 2) idx += 1;
+      toIds.splice(idx < 0 ? toIds.length : idx, 0, aid);
+      return { ...prev, [from]: prev[from].filter((x) => x !== aid), [to]: toIds };
+    });
+  }
+
+  function onDragEnd({ active, over }: DragEndEvent) {
+    const prev = preview;
+    setActiveId(null);
+    setPreview(null);
+    if (!over || !prev) return;
+    const aid = String(active.id);
+    const oid = String(over.id);
+    const to = containerOf(oid, prev);
+    if (!to || containerOf(aid, prev) !== to) return;
+    let ids = prev[to];
+    const oldI = ids.indexOf(aid);
+    const newI = oid.startsWith("list:") ? oldI : ids.indexOf(oid);
+    if (newI >= 0 && oldI !== newI) ids = arrayMove(ids, oldI, newI);
+    const task = byId.get(aid);
+    if (!task || (task.list === to && ids.join() === baseOrder[to].join())) return;
+    commitOrder(to, ids);
+  }
+
+  function commitOrder(list: ListKind, ids: string[]) {
+    run(
+      (s) => ({
+        ...s,
+        tasks: s.tasks.map((t) => {
+          const i = ids.indexOf(t.id);
+          return i < 0 ? t : { ...t, list, position: (i + 1) * 1000 };
+        }),
+      }),
+      () => reorderList(list, ids.filter((id) => !id.startsWith("tmp-"))),
+    );
+  }
+
+  const activeTask = activeId ? byId.get(activeId) : undefined;
+
   const openNew = useCallback((list: ListKind = "HAVE_TO") => setForm({ task: null, list }), []);
   const openEdit = useCallback((task: Task) => {
     if (task.id.startsWith("tmp-")) return;
@@ -124,14 +219,29 @@ export default function App({ initial }: { initial: Snapshot }) {
         }
       />
 
-      <div className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          {LISTS.map((l) => (
-            <TaskList key={l} list={l} tasks={lists[l]} today={today} onToggle={toggle} onEdit={openEdit} onAdd={openNew} />
-          ))}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCorners}
+        onDragStart={onDragStart}
+        onDragOver={onDragOver}
+        onDragEnd={onDragEnd}
+        onDragCancel={() => {
+          setActiveId(null);
+          setPreview(null);
+        }}
+      >
+        <div className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            {LISTS.map((l) => (
+              <TaskList key={l} list={l} tasks={shown(l)} today={today} onToggle={toggle} onEdit={openEdit} onAdd={openNew} />
+            ))}
+          </div>
+          <DoneSection tasks={done} onToggle={toggle} onDelete={remove} />
         </div>
-        <DoneSection tasks={done} onToggle={toggle} onDelete={remove} />
-      </div>
+        <DragOverlay dropAnimation={{ duration: 180, easing: "ease-out" }}>
+          {activeTask ? <TaskCard task={activeTask} today={today} onToggle={() => {}} onEdit={() => {}} dragging /> : null}
+        </DragOverlay>
+      </DndContext>
 
       {form && (
         <TaskForm

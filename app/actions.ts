@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/db";
 import { getSnapshot } from "@/lib/state";
 import { normalizeInput } from "@/lib/taskInput";
-import type { ActionResult, ListKind, Snapshot, TaskInput } from "@/lib/types";
+import { isListKind, type ActionResult, type ListKind, type Snapshot, type TaskInput } from "@/lib/types";
 
 async function result(error?: string): Promise<ActionResult> {
   return { snapshot: await getSnapshot(), ...(error ? { error } : {}) };
@@ -42,5 +42,14 @@ export async function toggleComplete(id: string, completed: boolean): Promise<Ac
     where: { id },
     data: { completed, completedAt: completed ? new Date() : null },
   });
+  return result();
+}
+
+/** Persist a list's full order after a drag. Also moves tasks into `list` if they came from the other list. */
+export async function reorderList(list: string, orderedIds: string[]): Promise<ActionResult> {
+  if (!isListKind(list)) throw new Error("Unknown list.");
+  await prisma.$transaction(
+    orderedIds.map((id, i) => prisma.task.updateMany({ where: { id }, data: { list, position: (i + 1) * 1000 } })),
+  );
   return result();
 }
