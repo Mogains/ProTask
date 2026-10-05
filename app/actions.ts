@@ -9,6 +9,7 @@ import { sortTasks } from "@/lib/sort";
 import { planTopAssignment, TOP3_FULL_MESSAGE } from "@/lib/top3";
 import { refreshTodayLog } from "@/lib/topServer";
 import { normalizeInput } from "@/lib/taskInput";
+import { requireSession } from "@/lib/session";
 import { isListKind, type ActionResult, type ListKind, type Snapshot, type TaskInput } from "@/lib/types";
 
 async function result(error?: string): Promise<ActionResult> {
@@ -27,10 +28,12 @@ async function endOfList(list: ListKind): Promise<number> {
 }
 
 export async function getState(): Promise<Snapshot> {
+  await requireSession();
   return getSnapshot();
 }
 
 export async function createTask(input: TaskInput): Promise<ActionResult> {
+  await requireSession();
   const data = normalizeInput(input);
   const task = await prisma.task.create({ data: { ...data, position: await endOfList(data.list) } });
   sync(task.id);
@@ -38,6 +41,7 @@ export async function createTask(input: TaskInput): Promise<ActionResult> {
 }
 
 export async function updateTask(id: string, input: TaskInput): Promise<ActionResult> {
+  await requireSession();
   const data = normalizeInput(input);
   const existing = await prisma.task.findUniqueOrThrow({ where: { id } });
   const position = existing.list === data.list ? existing.position : await endOfList(data.list);
@@ -47,6 +51,7 @@ export async function updateTask(id: string, input: TaskInput): Promise<ActionRe
 }
 
 export async function deleteTask(id: string): Promise<ActionResult> {
+  await requireSession();
   const task = await prisma.task.findUnique({ where: { id }, select: { calendarEventId: true } });
   await prisma.task.deleteMany({ where: { id } });
   if (task?.calendarEventId) after(() => deleteEventFor(id, task.calendarEventId));
@@ -55,6 +60,7 @@ export async function deleteTask(id: string): Promise<ActionResult> {
 }
 
 export async function toggleComplete(id: string, completed: boolean): Promise<ActionResult> {
+  await requireSession();
   await prisma.task.update({
     where: { id },
     data: { completed, completedAt: completed ? new Date() : null },
@@ -66,6 +72,7 @@ export async function toggleComplete(id: string, completed: boolean): Promise<Ac
 
 /** Persist a list's full order after a drag. Also moves tasks into `list` if they came from the other list. */
 export async function reorderList(list: string, orderedIds: string[]): Promise<ActionResult> {
+  await requireSession();
   if (!isListKind(list)) throw new Error("Unknown list.");
   const unpinned = await prisma.task.findMany({
     where: { id: { in: orderedIds }, topSlot: { not: null } },
@@ -85,6 +92,7 @@ export async function reorderList(list: string, orderedIds: string[]): Promise<A
 
 /** Turn auto sort on or off. Either way the current sorted order is saved, so nothing jumps. */
 export async function setAutoSort(list: string, autoSort: boolean): Promise<ActionResult> {
+  await requireSession();
   if (!isListKind(list)) throw new Error("Unknown list.");
   const tasks = sortTasks(await prisma.task.findMany({ where: { list, completed: false, topSlot: null } }));
   await prisma.$transaction([
@@ -96,6 +104,7 @@ export async function setAutoSort(list: string, autoSort: boolean): Promise<Acti
 
 /** Pin a task to the Top 3. Without a slot it takes the first free one; a 4th is refused. */
 export async function assignTop(taskId: string, slot?: number): Promise<ActionResult> {
+  await requireSession();
   const today = dayKey();
   const task = await prisma.task.findUniqueOrThrow({ where: { id: taskId } });
   if (task.completed) return result("That one's already done ✓");
@@ -127,6 +136,7 @@ export async function assignTop(taskId: string, slot?: number): Promise<ActionRe
 
 /** Unpin a task. It reappears in its original list. */
 export async function removeTop(taskId: string): Promise<ActionResult> {
+  await requireSession();
   await prisma.task.updateMany({ where: { id: taskId }, data: { topSlot: null, topDate: null } });
   sync(taskId);
   await refreshTodayLog();
@@ -135,6 +145,7 @@ export async function removeTop(taskId: string): Promise<ActionResult> {
 
 /** Hide today's "pick your Top 3" prompt. */
 export async function dismissPrompt(): Promise<ActionResult> {
+  await requireSession();
   const date = dayKey();
   await prisma.dayLog.upsert({
     where: { date },
@@ -145,6 +156,7 @@ export async function dismissPrompt(): Promise<ActionResult> {
 }
 
 export async function disconnectGoogle(): Promise<ActionResult> {
+  await requireSession();
   await disconnect();
   return result();
 }

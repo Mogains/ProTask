@@ -65,3 +65,21 @@ model GoogleAccount {
   /// id of the dedicated "Top 3" calendar
   calendarId   String?
 }
+
+/// Single-row owner login. The password is stored as an argon2id hash (PHC string).
+model AuthConfig {
+  id           Int       @id @default(1)
+  passwordHash String
+  /// Consecutive failed logins, drives the lockout backoff
+  failedCount  Int       @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+}
+
+/// Login sessions. Only a SHA-256 of the cookie value is stored, so a copied database can't be used to log in.
+model Session {
+  id         String   @id
+  createdAt  DateTime @default(now())
+  expiresAt  DateTime
+  lastSeenAt DateTime @default(now())
+}

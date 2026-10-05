@@ -27,15 +27,20 @@ The app works fully without Google. Calendar setup is optional and described bel
 
 ### Using it on your phone
 
-Run the dev server on your network and open it from your phone on the same Wi-Fi:
+ProTask only listens on `127.0.0.1`, and it accepts requests from other devices only over HTTPS. The easiest way to reach it from your phone is an HTTPS proxy on the same Mac, so the app itself never listens on the network. For example, with [Tailscale](https://tailscale.com):
 
 ```bash
-# find your Mac's IP: System Settings → Wi-Fi → Details, or `ipconfig getifaddr en0`
-DEV_ORIGINS=192.168.1.23 npm run dev -- -H 0.0.0.0
-# then open http://192.168.1.23:3000 on your phone
+tailscale serve --bg 3000          # https://<your-mac>.<tailnet>.ts.net, only reachable inside your tailnet
 ```
 
-On touch screens, press and hold a task briefly to drag it. Connect Google Calendar from your computer at `http://localhost:3000`, because Google only allows plain-http redirects to `localhost`. Once connected, syncing works from any device.
+Then add to `.env`, and restart:
+
+```bash
+PUBLIC_HOSTS=<your-mac>.<tailnet>.ts.net
+TRUST_PROXY=1                       # the proxy tells ProTask the request came in over HTTPS
+```
+
+Any other TLS reverse proxy (Caddy, nginx) works the same way. On touch screens, press and hold a task briefly to drag it. Connect Google Calendar from your computer at `http://localhost:3000`, because Google only allows plain-http redirects to `localhost`.
 
 For a longer-lived setup, run `npm run build && npm start` instead of the dev server.
 
@@ -48,6 +53,11 @@ For a longer-lived setup, run `npm run build && npm start` instead of the dev se
 | `GOOGLE_CLIENT_ID` | for calendar | OAuth client ID from Google Cloud. |
 | `GOOGLE_CLIENT_SECRET` | for calendar | OAuth client secret from Google Cloud. |
 | `GOOGLE_REDIRECT_URI` | for calendar | Must exactly match the URI registered in Google Cloud. Default `http://localhost:3000/api/google/callback`. |
+| `TOKEN_STORE` | no | `keychain` (default on macOS) or `encrypted`. Where Google tokens are kept. |
+| `TOKEN_ENCRYPTION_KEY` | with `encrypted` | 32 random bytes, base64 (`openssl rand -base64 32`). |
+| `HOST` / `PORT` | no | Listen address. Default `127.0.0.1:3000`. Anything but loopback is refused until a password is set. |
+| `PUBLIC_HOSTS` | no | Comma-separated hostnames other than localhost that ProTask answers to. Requests for any other `Host` are rejected. |
+| `TRUST_PROXY` | no | `1` when behind your own TLS proxy, so `X-Forwarded-Proto` is trusted. |
 | `DEV_ORIGINS` | no | Comma-separated hosts allowed to load the dev server, such as your Mac's LAN IP. |
 
 Restart the dev server after changing `.env`.
@@ -141,8 +151,23 @@ prisma/schema.prisma      database schema
 tests/                    vitest tests
 ```
 
+## Security
+
+- **Password.** The first time you open the app you set an owner password, stored as an argon2id hash. Only a request from the same computer can set it. Every page, API route and server action needs a login session.
+- **Login limits.** After 5 wrong passwords, logins lock for 30 seconds, doubling with each further miss up to 1 hour. The lock is stored in the database, so restarting doesn't reset it. Anyone who can reach the login page can also trigger the lock.
+- **Sessions.** A random 256-bit token in an `httpOnly`, `SameSite=Lax` cookie, which is `Secure` and `__Host-` prefixed over HTTPS. Sessions last 14 days, and only a SHA-256 of the token is stored. **Log out** ends the session on the server.
+- **CSRF.** Any request that changes something must come from the app's own origin. Server actions also check the session themselves.
+- **Network.**
+  - It binds to `127.0.0.1` by default, and requests for unknown `Host` names are rejected, which blocks DNS rebinding.
+  - Any host other than localhost needs HTTPS. `npm run dev`/`start` refuse to listen on a non-loopback address until a password exists and `PUBLIC_HOSTS` is set.
+- **Headers.** A nonce-based Content Security Policy, plus `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: no-referrer` and HSTS over HTTPS.
+- **Data at rest.**
+  - Google tokens are in your Keychain. The SQLite file holds your tasks and is `chmod 600`.
+  - Anyone with your macOS account can still read the SQLite file and the Keychain item, so this protects against other people on the network, not other software running as you.
+- **No share links.** The app has no calendar feed or share URL. Calendar access goes through Google's API with your own OAuth client.
+- **Not built for the open internet.** It hasn't had a security audit and is meant for one person. If you expose it beyond your own devices, put it behind a VPN like Tailscale.
+
 ## Limitations (v1)
 
-- Single user with no login. Don't expose it to the internet as is: anyone who can reach it can see and edit your tasks and calendar link.
 - Sync is one way. Edits made in Google Calendar are not pulled back and are overwritten on the next change to that task.
 - Each task has one event. A pinned task that is due on another day keeps its due-date event.

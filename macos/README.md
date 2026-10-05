@@ -144,7 +144,7 @@ The widget is a WidgetKit extension inside ProTask.app. It reads a small snapsho
 
 Automatic backups go to `~/Library/Application Support/ProTask/Backups` (or the folder chosen in Settings), one per day, newest seven kept. Schema changes are additive, so SwiftData migrates existing data automatically.
 
-Tasks are stored with SwiftData in `~/Library/Application Support/ProTask/Top3.store`. Data from the old `Top 3` folder is moved there automatically. Delete that folder to start over.
+Tasks are stored with SwiftData in `~/Library/Application Support/ProTask/Top3.store`. ProTask has no network listener and no accounts. The `ProTask` folder, the database, its journal files, `widget.json` and the backups are owner-only (`0700` folders, `0600` files). Permissions are reapplied every launch and on every backup. Data from the old `Top 3` folder is moved there automatically. Delete that folder to start over.
 
 The bundle identifier (`com.anmolbhatt.top3`) is unchanged from the app's earlier name so existing permissions carry over. The bundled Inter font is licensed under the SIL Open Font License (`Top3/Resources/Fonts/Inter-LICENSE.txt`).
 

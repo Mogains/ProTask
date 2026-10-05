@@ -90,7 +90,10 @@ final class AppModel {
         if !fm.fileExists(atPath: dir.path), fm.fileExists(atPath: legacy.path) {
             try? fm.moveItem(at: legacy, to: dir)
         }
-        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true, attributes: [.posixPermissions: NSNumber(value: FilePermissions.folder)])
+        // Owner-only: the store, its -wal/-shm journals, widget.json and the default Backups folder.
+        FilePermissions.lockDown(dir)
+        FilePermissions.lockDown(dir.appending(path: "Backups", directoryHint: .isDirectory))
         // TOP3_STORE_PATH lets tests and screenshots use a throwaway database.
         let storeURL = ProcessInfo.processInfo.environment["TOP3_STORE_PATH"].map { URL(fileURLWithPath: $0) }
             ?? dir.appending(path: "Top3.store")

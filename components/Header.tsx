@@ -3,9 +3,9 @@
 import type { ReactNode } from "react";
 import { ThemeToggle } from "./ThemeToggle";
 
-type Props = { streak: number; done: number; total: number; pct: number; actions?: ReactNode };
+type Props = { streak: number; done: number; total: number; pct: number; actions?: ReactNode; logout?: ReactNode };
 
-export function Header({ streak, done, total, pct, actions }: Props) {
+export function Header({ streak, done, total, pct, actions, logout }: Props) {
   return (
     <header className="flex flex-wrap items-center gap-x-4 gap-y-3">
       <h1 className="text-2xl font-bold tracking-tight">
@@ -29,6 +29,7 @@ export function Header({ streak, done, total, pct, actions }: Props) {
       <div className="ml-auto flex items-center gap-2">
         {actions}
         <ThemeToggle />
+        {logout}
       </div>
     </header>
   );

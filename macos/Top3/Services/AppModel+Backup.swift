@@ -152,7 +152,9 @@ extension AppModel {
     func writeBackup(named name: String) -> Bool {
         do {
             try FileManager.default.createDirectory(at: backupDirectory, withIntermediateDirectories: true)
-            try makeBackup().encoded().write(to: backupDirectory.appending(path: name), options: .atomic)
+            let url = backupDirectory.appending(path: name)
+            try makeBackup().encoded().write(to: url, options: .atomic)
+            FilePermissions.lockFile(url)
             return true
         } catch {
             showToast("Backup failed: \(error.localizedDescription)")

@@ -41,6 +41,7 @@ import { CalendarSidebar } from "./CalendarSidebar";
 import { Confetti } from "./Confetti";
 import { DoneSection } from "./DoneSection";
 import { Header } from "./Header";
+import { logoutAction } from "@/app/auth-actions";
 import { TaskCard } from "./TaskCard";
 import { TaskForm } from "./TaskForm";
 import { TaskList } from "./TaskList";
@@ -389,6 +390,13 @@ export default function App({ initial }: { initial: Snapshot }) {
           >
             + New <kbd className="ml-1 hidden rounded bg-black/10 px-1 text-xs sm:inline">N</kbd>
           </button>
+        }
+        logout={
+          <form action={logoutAction}>
+            <button type="submit" className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100" title="Log out">
+              Log out
+            </button>
+          </form>
         }
       />
 

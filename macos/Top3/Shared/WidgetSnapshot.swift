@@ -38,7 +38,9 @@ struct WidgetSnapshot: Codable, Equatable {
     func write() {
         let e = JSONEncoder()
         e.dateEncodingStrategy = .iso8601
-        if let data = try? e.encode(self) { try? data.write(to: Self.url, options: .atomic) }
+        guard let data = try? e.encode(self), (try? data.write(to: Self.url, options: .atomic)) != nil else { return }
+        // Owner-only, like the database (the widget runs as the same user, so it can still read it).
+        try? FileManager.default.setAttributes([.posixPermissions: NSNumber(value: Int16(0o600))], ofItemAtPath: Self.url.path)
     }
 
     static let placeholder = WidgetSnapshot(updated: Date(), day: "", items: [
