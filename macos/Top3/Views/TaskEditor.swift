@@ -14,6 +14,10 @@ struct TaskEditor: View {
     @State private var hasTime = false
     @State private var estimate = ""
     @State private var detectDates = true
+    @State private var repeatKind: RecurrenceRule.Kind?
+    @State private var repeatInterval = "1"
+    @State private var repeatUnit: RecurrenceRule.Unit = .days
+    @State private var repeatDays: Set<Int> = []
     @State private var originalTitle = ""
 
     var body: some View {
@@ -38,6 +42,14 @@ struct TaskEditor: View {
                     }
                     PropertyRow(label: "Due") { dueControls }
                     PropertyRow(label: "Estimate") { estimateControls }
+                    PropertyRow(label: "Repeat") {
+                        Segments(options: [nil] + RecurrenceRule.Kind.allCases.map { Optional($0) }, selection: $repeatKind) {
+                            $0?.title ?? "None"
+                        }
+                    }
+                    if repeatKind == .custom {
+                        PropertyRow(label: "") { customRepeatControls }
+                    }
                 }
             }
             .padding(.vertical, Theme.Space.s)
@@ -112,6 +124,40 @@ struct TaskEditor: View {
         }
     }
 
+    private var customRepeatControls: some View {
+        HStack(spacing: Theme.Space.xs) {
+            Text("Every").font(Theme.Fonts.small).foregroundStyle(Theme.Palette.textTertiary)
+            TextField("", text: $repeatInterval)
+                .textFieldStyle(.plain)
+                .focusEffectDisabled()
+                .font(Theme.Fonts.small)
+                .multilineTextAlignment(.center)
+                .frame(width: Theme.Size.iconButton)
+                .frame(height: Theme.Size.iconButton)
+                .overlay(RoundedRectangle(cornerRadius: Theme.Radius.s).strokeBorder(Theme.Palette.border, lineWidth: Theme.Size.hairline))
+            Segments(options: RecurrenceRule.Unit.allCases, selection: $repeatUnit) { $0.rawValue }
+            if repeatUnit == .weeks {
+                ForEach(1...7, id: \.self) { day in
+                    let on = repeatDays.contains(day)
+                    Button { if on { repeatDays.remove(day) } else { repeatDays.insert(day) } } label: {
+                        Text(RecurrenceRule.weekdayLetters[day - 1])
+                            .font(Theme.Fonts.caption)
+                            .foregroundStyle(on ? Theme.Palette.text : Theme.Palette.textTertiary)
+                            .frame(width: Theme.Size.slotNumber + Theme.Space.xs, height: Theme.Size.iconButton)
+                            .background(RoundedRectangle(cornerRadius: Theme.Radius.s).fill(on ? Theme.Palette.selected : .clear))
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private var draftRecurrence: RecurrenceRule? {
+        guard let kind = repeatKind else { return nil }
+        return RecurrenceRule(kind: kind, interval: max(Int(repeatInterval) ?? 1, 1), unit: repeatUnit, weekdays: repeatDays.sorted())
+    }
+
     private var listChoices: [ListKind] {
         request.task?.isIdea == true ? ListKind.allCases : ListKind.taskLists
     }
@@ -130,6 +176,12 @@ struct TaskEditor: View {
                 hasTime = t.hasDueTime
             }
             estimate = t.estimateMinutes.map(String.init) ?? ""
+            if let r = t.recurrence {
+                repeatKind = r.kind
+                repeatInterval = String(r.interval)
+                repeatUnit = r.unit
+                repeatDays = Set(r.weekdays)
+            }
         }
     }
 
@@ -149,7 +201,8 @@ struct TaskEditor: View {
             due = hasTime ? dueDate : Calendar.current.startOfDay(for: dueDate)
         }
         let draft = TaskDraft(title: finalTitle, notes: notes, list: list, priority: priority, dueDate: due,
-                              hasDueTime: hasDue && hasTime, estimateMinutes: Int(estimate.trimmingCharacters(in: .whitespaces)))
+                              hasDueTime: hasDue && hasTime, estimateMinutes: Int(estimate.trimmingCharacters(in: .whitespaces)),
+                              recurrence: draftRecurrence)
         if let t = request.task { model.update(t, with: draft) } else { model.addTask(draft) }
         dismiss()
     }

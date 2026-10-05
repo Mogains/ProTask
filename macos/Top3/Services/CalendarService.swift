@@ -110,6 +110,9 @@ final class CalendarService {
         }
         let event = existing ?? EKEvent(eventStore: store)
         if existing != nil, matches(event, spec), event.calendar == calendar { return }
+        // Saving the first occurrence with .futureEvents edits the whole series (or collapses it when the rule goes away).
+        let span: EKSpan = (event.hasRecurrenceRules || spec.recurrence != nil) ? .futureEvents : .thisEvent
+        event.recurrenceRules = spec.recurrence.map { [Self.ekRule($0)] }
         event.calendar = calendar
         event.title = spec.title
         event.notes = spec.notes
@@ -118,7 +121,7 @@ final class CalendarService {
         event.endDate = spec.end
         event.availability = spec.isAllDay ? .free : .busy
         do {
-            try store.save(event, span: .thisEvent, commit: true)
+            try store.save(event, span: span, commit: true)
             task.calendarEventID = event.eventIdentifier
             lastError = nil
         } catch {
@@ -132,11 +135,36 @@ final class CalendarService {
     }
 
     private func remove(_ event: EKEvent) {
-        do { try store.remove(event, span: .thisEvent, commit: true) } catch { lastError = error.localizedDescription }
+        do { try store.remove(event, span: event.hasRecurrenceRules ? .futureEvents : .thisEvent, commit: true) } catch { lastError = error.localizedDescription }
+    }
+
+    static func ekRule(_ r: RecurrenceRule) -> EKRecurrenceRule {
+        func days(_ numbers: [Int]) -> [EKRecurrenceDayOfWeek]? {
+            numbers.isEmpty ? nil : numbers.sorted().compactMap { EKWeekday(rawValue: $0).map { EKRecurrenceDayOfWeek($0) } }
+        }
+        let n = max(r.interval, 1)
+        switch r.kind {
+        case .daily: return EKRecurrenceRule(recurrenceWith: .daily, interval: 1, end: nil)
+        case .weekdays:
+            return EKRecurrenceRule(recurrenceWith: .weekly, interval: 1, daysOfTheWeek: days([2, 3, 4, 5, 6]),
+                                    daysOfTheMonth: nil, monthsOfTheYear: nil, weeksOfTheYear: nil, daysOfTheYear: nil, setPositions: nil, end: nil)
+        case .weekly: return EKRecurrenceRule(recurrenceWith: .weekly, interval: 1, end: nil)
+        case .monthly: return EKRecurrenceRule(recurrenceWith: .monthly, interval: 1, end: nil)
+        case .custom where r.unit == .days: return EKRecurrenceRule(recurrenceWith: .daily, interval: n, end: nil)
+        case .custom:
+            return EKRecurrenceRule(recurrenceWith: .weekly, interval: n, daysOfTheWeek: days(r.weekdays),
+                                    daysOfTheMonth: nil, monthsOfTheYear: nil, weeksOfTheYear: nil, daysOfTheYear: nil, setPositions: nil, end: nil)
+        }
     }
 
     private func matches(_ e: EKEvent, _ s: EventSpec) -> Bool {
-        e.title == s.title && e.notes == s.notes && e.isAllDay == s.isAllDay
+        let want = s.recurrence.map { Self.ekRule($0) }
+        let have = e.recurrenceRules?.first
+        let sameRepeat = (want == nil && have == nil)
+            || (want != nil && have != nil && want!.frequency == have!.frequency && want!.interval == have!.interval
+                && (want!.daysOfTheWeek?.count ?? 0) == (have!.daysOfTheWeek?.count ?? 0))
+        guard sameRepeat else { return false }
+        return e.title == s.title && e.notes == s.notes && e.isAllDay == s.isAllDay
             && (s.isAllDay ? Calendar.current.isDate(e.startDate, inSameDayAs: s.start) : e.startDate == s.start && e.endDate == s.end)
     }
 

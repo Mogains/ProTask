@@ -11,6 +11,7 @@ struct EventTaskInfo {
     var isCompleted: Bool
     var topSlot: Int?
     var topDay: String?
+    var recurrence: RecurrenceRule? = nil
 }
 
 struct EventSpec: Equatable {
@@ -19,6 +20,8 @@ struct EventSpec: Equatable {
     var isAllDay: Bool
     var start: Date
     var end: Date
+    /// Set for an open recurring task: the event repeats from this occurrence on.
+    var recurrence: RecurrenceRule? = nil
 }
 
 enum EventPlanner {
@@ -37,14 +40,17 @@ enum EventPlanner {
         var meta = ["Priority: \(t.priority.title)"]
         if let est = t.estimateMinutes { meta.append("Estimate: \(est) min") }
         if pinnedToday, let slot = t.topSlot { meta.append("Today's Top 3, #\(slot)") }
+        let title = (t.isCompleted ? doneMark : "") + t.title
+        // A finished occurrence keeps a single event; the open one carries the repeat.
+        let repeats = t.isCompleted || t.dueDate == nil ? nil : t.recurrence
+        if let r = repeats { meta.append("Repeats: \(r.summary)") }
         let notes = [t.notes.isEmpty ? nil : t.notes, meta.joined(separator: " · "), "Added by ProTask"]
             .compactMap { $0 }
             .joined(separator: "\n\n")
-        let title = (t.isCompleted ? doneMark : "") + t.title
 
         if let due = t.dueDate, t.hasDueTime {
             let end = due.addingTimeInterval(Double(t.estimateMinutes ?? defaultMinutes) * 60)
-            return EventSpec(title: title, notes: notes, isAllDay: false, start: due, end: end)
+            return EventSpec(title: title, notes: notes, isAllDay: false, start: due, end: end, recurrence: repeats)
         }
         let day: Date
         if let due = t.dueDate {
@@ -52,6 +58,6 @@ enum EventPlanner {
         } else {
             day = DayKey.date(from: today, calendar: calendar) ?? calendar.startOfDay(for: Date())
         }
-        return EventSpec(title: title, notes: notes, isAllDay: true, start: day, end: day)
+        return EventSpec(title: title, notes: notes, isAllDay: true, start: day, end: day, recurrence: repeats)
     }
 }

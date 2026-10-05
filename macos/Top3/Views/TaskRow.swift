@@ -139,6 +139,9 @@ struct RowMeta: View {
                     }
                     .foregroundStyle(due.overdue ? Theme.Palette.text : Theme.Palette.textSecondary)
                 }
+                if let rule = task.recurrence {
+                    Icon(.repeat, size: Theme.Size.dragHandle).help("Repeats: \(rule.summary)")
+                }
                 if let est = Fmt.minutes(task.estimateMinutes) {
                     Text(est).foregroundStyle(Theme.Palette.textTertiary)
                 }

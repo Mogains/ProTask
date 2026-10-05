@@ -24,6 +24,7 @@ struct TaskDraft {
     var dueDate: Date?
     var hasDueTime = false
     var estimateMinutes: Int?
+    var recurrence: RecurrenceRule?
 }
 
 struct ToastMessage: Identifiable, Equatable {
@@ -221,6 +222,12 @@ final class AppModel {
         t.dueDate = d.dueDate
         t.hasDueTime = d.dueDate != nil && d.hasDueTime
         t.estimateMinutes = d.estimateMinutes.flatMap { $0 > 0 ? min($0, 1440) : nil }
+        t.recurrence = d.list == .parkingLot ? nil : d.recurrence
+        if t.recurrence != nil {
+            // A repeating task needs a date to repeat from.
+            if t.dueDate == nil { t.dueDate = DayKey.date(from: today) ?? Calendar.current.startOfDay(for: Date()) }
+            if t.seriesID == nil { t.seriesID = t.id }
+        }
     }
 
     func delete(_ t: TaskItem) {
@@ -239,9 +246,30 @@ final class AppModel {
         t.isCompleted = done
         t.completedAt = done ? Date() : nil
         calendar.sync(t, today: today)
+        if done { spawnNextOccurrence(of: t) }
         refreshDayLog()
         save()
         if !wasAllDone && allPinnedDone(in: allTasks()) { celebrate() }
+    }
+
+    /// Completing a recurring task creates its next occurrence (once). The series is never deleted.
+    private func spawnNextOccurrence(of t: TaskItem) {
+        guard let rule = t.recurrence, task(t.nextOccurrenceID) == nil else { return }
+        let base = t.dueDate ?? Date()
+        let next = TaskItem(title: t.title, list: t.list == .parkingLot ? .haveTo : t.list, position: endPosition(of: t.list))
+        next.notes = t.notes
+        next.priority = t.priority
+        next.estimateMinutes = t.estimateMinutes
+        next.hasDueTime = t.hasDueTime
+        next.dueDate = rule.nextOccurrence(after: base, today: Date())
+        next.recurrenceRaw = t.recurrenceRaw
+        next.seriesID = t.seriesID ?? t.id
+        context.insert(next)
+        t.nextOccurrenceID = next.id
+        calendar.sync(next, today: today)
+        if let due = next.dueDate {
+            showToast("Next: \(due.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())).")
+        }
     }
 
     private func endPosition(of list: ListKind) -> Double {

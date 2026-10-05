@@ -24,6 +24,12 @@ final class TaskItem {
     var createdAt: Date = Date()
     /// Parking Lot only: when the one-hour reminder fires.
     var remindAt: Date?
+    /// Encoded RecurrenceRule, nil for one-off tasks.
+    var recurrenceRaw: String?
+    /// Shared by every occurrence of a recurring task.
+    var seriesID: UUID?
+    /// The occurrence created when this one was completed, so re-checking never duplicates it.
+    var nextOccurrenceID: UUID?
 
     init(title: String, list: ListKind, position: Double) {
         self.title = title
@@ -43,9 +49,15 @@ final class TaskItem {
 
     var isIdea: Bool { list == .parkingLot }
 
+    var recurrence: RecurrenceRule? {
+        get { RecurrenceRule(encoded: recurrenceRaw) }
+        set { recurrenceRaw = newValue?.encoded }
+    }
+
     var eventInfo: EventTaskInfo {
         EventTaskInfo(title: title, notes: notes, dueDate: dueDate, hasDueTime: hasDueTime, priority: priority,
-                      estimateMinutes: estimateMinutes, isCompleted: isCompleted, topSlot: topSlot, topDay: topDay)
+                      estimateMinutes: estimateMinutes, isCompleted: isCompleted, topSlot: topSlot, topDay: topDay,
+                      recurrence: recurrence)
     }
 
     var statInfo: StatTask {
