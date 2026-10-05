@@ -9,6 +9,26 @@ A native macOS goals and to-do app built around one idea: every day, pick your *
 - SwiftUI, SwiftData, EventKit and UserNotifications. macOS 14 or later. No account, no server.
 - A custom design system (`Top3/Views/Theme.swift`): flat window, Inter type, greys with one muted accent, following the system light/dark setting.
 
+## Features at a glance
+
+| Area | What it does |
+| --- | --- |
+| Quick add anywhere | Option-Space (change it in Settings) opens a floating field from any app. `~` sends to Nice to do, `?` to the Parking Lot. |
+| Natural language | "email prof friday 3pm !!! 30m #work" sets the due date and time, priority (`!` low, `!!` medium, `!!!` high), estimate and tags. A muted preview shows what was understood; Backspace right after the date removes a wrong guess. |
+| Recurring tasks | Daily, weekdays, weekly, monthly, or every N days or weeks on chosen weekdays. Completing one creates the next; the calendar shows it as a repeating event. |
+| Command palette | Command-K: fuzzy search across tasks, ideas, sections and actions. |
+| Morning planning | The first open of each day shows a planning screen with rolled-over picks, overdue and due-today tasks, and today's calendar. Pick with 1/2/3, Return to start, Esc to skip. |
+| Evening wrap-up | An optional notification (6 PM by default) opens what you finished, what rolls over, a brain-dump field into the Parking Lot, and Close the day. |
+| Focus timer | 25, 50 or custom minutes from a task's menu, the palette, or Shift-Command-F. Shows in the sidebar footer, notifies at the end, logs actual time against the estimate. |
+| Waiting On | Handed-off items with who and a follow-up date. The follow-up notifies, appears on Today, and offers Received, Snooze 1 day, Move to Have to do. |
+| Tags | `#tag` in a title or Tags… in the row menu. The sidebar's Tags section filters the current view. |
+| Menu bar | Shows Top 3 progress like "2/3"; the dropdown checks items off and quick-adds. |
+| Weekly review | Completed this week vs last, completion rate, streak, focus time, actual vs estimated, full Top 3 days, and one sparkline. |
+| Desktop widget | Small and medium widgets with today's Top 3. |
+| Export and backup | File menu: JSON backup, Markdown export, import from JSON. A daily backup keeps the newest seven. |
+
+The left sidebar can be hidden with Control-Command-S or the header button.
+
 ## Install from the .dmg
 
 1. Open `dist/ProTask.dmg` (build it first, see below).
@@ -55,7 +75,8 @@ Then, from this `macos/` folder:
 xcodebuild -project Top3.xcodeproj -scheme Top3 -derivedDataPath build build
 open "build/Build/Products/Debug/ProTask.app"
 
-# Unit tests (sorting, Top 3 limit, day rollover and streak, free time, calendar mapping)
+# Unit tests: sorting, Top 3 limit, rollover, natural language parser, recurrence, fuzzy search,
+# weekly stats, backups, day keys, free time, calendar mapping
 xcodebuild -project Top3.xcodeproj -scheme Top3 -derivedDataPath build test
 
 # Release build packaged as dist/ProTask.dmg
@@ -77,13 +98,17 @@ ProTask uses its own icon set, not SF Symbols. Each icon is a hand-written 16×1
 
 | Shortcut | Action |
 | --- | --- |
+| Option-Space (anywhere) | Quick add (configurable) |
+| Command-K | Command palette |
 | Command-N | New task |
 | Shift-Command-P | Quick add to Parking Lot |
 | Command-1 / 2 / 3 | Put the selected task in Top 3 slot 1, 2 or 3 |
 | Command-E | Edit the selected task |
+| Shift-Command-F | Start or stop the focus timer on the selected task |
+| Control-Command-S | Hide or show the sidebar |
 | Command-Return | Mark the selected task done or not done |
 | Option-Command-0 | Go to Today |
-| Option-Command-1 / 2 / 3 | Go to Have to do, Nice to do, Parking Lot |
+| Option-Command-1 / 2 / 3 / 4 | Go to Have to do, Nice to do, Waiting On, Parking Lot |
 | Command-comma | Settings |
 
 Click a task to select it. Double-click to edit. Right-click for every action.
@@ -111,7 +136,13 @@ Click a task to select it. Double-click to edit. Right-click for every action.
 - If you used the app when it was called Top 3, its "Top 3" calendar is renamed to "ProTask" in place, so existing events carry over.
 - The side panel lists today's events from every calendar except "ProTask", plus free blocks between 8 AM and 8 PM.
 
+## Widget note
+
+The widget is a WidgetKit extension inside ProTask.app. It reads a small snapshot file the app writes to `~/Library/Application Support/ProTask/widget.json`, so it needs no app group or Developer account. Because the app is ad-hoc signed, macOS may not list the widget in the widget gallery on every system. If it is missing after opening ProTask once, signing the app with a free Apple ID team in Xcode makes it appear.
+
 ## Data
+
+Automatic backups go to `~/Library/Application Support/ProTask/Backups` (or the folder chosen in Settings), one per day, newest seven kept. Schema changes are additive, so SwiftData migrates existing data automatically.
 
 Tasks are stored with SwiftData in `~/Library/Application Support/ProTask/Top3.store`. Data from the old `Top 3` folder is moved there automatically. Delete that folder to start over.
 
