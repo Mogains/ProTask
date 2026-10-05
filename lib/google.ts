@@ -4,6 +4,8 @@ import { prisma } from "./db";
 import { dayKey, parseKey } from "./day";
 import type { CalEvent } from "./freeTime";
 import { CALENDAR_NAME, googleConfigured, redirectUri } from "./googleConfig";
+import { describeError, logError } from "./redact";
+import { clearTokens, getTokens, saveTokens, updateTokens } from "./tokenStore";
 
 const SCOPES = ["openid", "email", "https://www.googleapis.com/auth/calendar"];
 const timeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -30,18 +32,15 @@ export async function connectWithCode(code: string) {
   const client = oauthClient();
   const { tokens } = await client.getToken(code);
   const existing = await prisma.googleAccount.findUnique({ where: { id: 1 } });
-  const refreshToken = tokens.refresh_token ?? existing?.refreshToken;
+  const refreshToken = tokens.refresh_token ?? (await getTokens())?.refreshToken;
   if (!refreshToken) {
     throw new Error(
       "Google didn't return a refresh token. Remove Top 3 at myaccount.google.com/permissions and connect again.",
     );
   }
-  const data = {
-    email: emailFromIdToken(tokens.id_token) ?? existing?.email ?? null,
-    accessToken: tokens.access_token ?? null,
-    refreshToken,
-    expiresAt: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-  };
+  // Tokens go to the Keychain (or encrypted storage); the database only keeps the email and calendar id.
+  await saveTokens({ refreshToken, accessToken: tokens.access_token ?? null, expiresAt: tokens.expiry_date ?? null });
+  const data = { email: emailFromIdToken(tokens.id_token) ?? existing?.email ?? null };
   await prisma.googleAccount.upsert({ where: { id: 1 }, create: { id: 1, ...data }, update: data });
   const ctx = await getContext();
   if (ctx) await ensureCalendar(ctx);
@@ -49,10 +48,14 @@ export async function connectWithCode(code: string) {
 
 export async function disconnect() {
   const acct = await prisma.googleAccount.findUnique({ where: { id: 1 } });
+  const tokens = await getTokens();
+  if (tokens) {
+    await oauthClient()
+      .revokeToken(tokens.refreshToken)
+      .catch(() => {});
+  }
+  await clearTokens();
   if (!acct) return;
-  await oauthClient()
-    .revokeToken(acct.refreshToken)
-    .catch(() => {});
   // Keep calendarEventId on tasks: reconnecting finds the same "Top 3" calendar and updates those events.
   await prisma.googleAccount.delete({ where: { id: 1 } });
 }
@@ -63,23 +66,20 @@ async function getContext(): Promise<Ctx | null> {
   if (!googleConfigured()) return null;
   const acct = await prisma.googleAccount.findUnique({ where: { id: 1 } });
   if (!acct) return null;
+  const tokens = await getTokens();
+  if (!tokens) return null;
   const client = oauthClient();
   client.setCredentials({
-    refresh_token: acct.refreshToken,
-    access_token: acct.accessToken ?? undefined,
-    expiry_date: acct.expiresAt?.getTime(),
+    refresh_token: tokens.refreshToken,
+    access_token: tokens.accessToken ?? undefined,
+    expiry_date: tokens.expiresAt ?? undefined,
   });
   client.on("tokens", (t) => {
-    prisma.googleAccount
-      .update({
-        where: { id: 1 },
-        data: {
-          ...(t.access_token ? { accessToken: t.access_token } : {}),
-          ...(t.expiry_date ? { expiresAt: new Date(t.expiry_date) } : {}),
-          ...(t.refresh_token ? { refreshToken: t.refresh_token } : {}),
-        },
-      })
-      .catch(() => {});
+    updateTokens({
+      ...(t.access_token ? { accessToken: t.access_token } : {}),
+      ...(t.expiry_date ? { expiresAt: t.expiry_date } : {}),
+      ...(t.refresh_token ? { refreshToken: t.refresh_token } : {}),
+    }).catch((e) => logError("calendar", e));
   });
   return { cal: google.calendar({ version: "v3", auth: client }), calendarId: acct.calendarId };
 }
@@ -142,9 +142,8 @@ async function syncOne(taskId: string) {
       await prisma.task.updateMany({ where: { id: taskId }, data: { calendarEventId: eventId, syncError: null } });
     }
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Calendar sync failed";
-    console.error(`[calendar] sync failed for task ${taskId}:`, msg);
-    await prisma.task.updateMany({ where: { id: taskId }, data: { syncError: msg.slice(0, 300) } });
+    logError("calendar sync", e);
+    await prisma.task.updateMany({ where: { id: taskId }, data: { syncError: describeError(e) } });
   }
 }
 
@@ -179,7 +178,7 @@ export function deleteEventFor(taskId: string, eventId: string | null) {
     try {
       await deleteRemote(ctx, await ensureCalendar(ctx), eventId);
     } catch (e) {
-      console.error("[calendar] delete failed:", e instanceof Error ? e.message : e);
+      logError("calendar delete", e);
     }
   });
 }

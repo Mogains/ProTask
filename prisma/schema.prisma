@@ -51,13 +51,17 @@ model DayLog {
   promptDismissed Boolean @default(false)
 }
 
-/// Single-row store for the connected Google account.
+/// Single-row store for the connected Google account. OAuth tokens are NOT kept here:
+/// they live in the macOS Keychain (or encrypted in tokenCipher, see lib/tokenStore.ts).
 model GoogleAccount {
   id           Int       @id @default(1)
   email        String?
+  /// Legacy plain-text columns, emptied by the migration in lib/tokenStore.ts. Never written.
   accessToken  String?
-  refreshToken String
+  refreshToken String?
   expiresAt    DateTime?
+  /// AES-256-GCM ciphertext of the tokens when TOKEN_STORE=encrypted
+  tokenCipher  String?
   /// id of the dedicated "Top 3" calendar
   calendarId   String?
 }

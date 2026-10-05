@@ -98,7 +98,9 @@ final class AppModel {
         do {
             container = try ModelContainer(for: TaskItem.self, ListSetting.self, DayLog.self, FocusSession.self, configurations: config)
         } catch {
-            fatalError("Could not open the ProTask database: \(error)")
+            // Only the error domain and code: the full error can include file paths and stored values.
+            let ns = error as NSError
+            fatalError("Could not open the ProTask database (\(ns.domain) \(ns.code))")
         }
         today = DayKey.key(resetHour: Self.savedResetHour())
         reloadListSettings()

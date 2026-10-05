@@ -43,6 +43,7 @@ vi.mock("googleapis", () => ({
 import { prisma } from "@/lib/db";
 import { dayKey } from "@/lib/day";
 import { deleteEventFor, syncTasks } from "@/lib/google";
+import { saveTokens } from "@/lib/tokenStore";
 
 const newTask = (data: Partial<Parameters<typeof prisma.task.create>[0]["data"]> = {}) =>
   prisma.task.create({ data: { title: "Pay rent", list: "HAVE_TO", position: 1000, ...data } });
@@ -52,7 +53,8 @@ describe("Google Calendar sync", () => {
     g.calls.length = 0;
     await prisma.task.deleteMany();
     await prisma.googleAccount.deleteMany();
-    await prisma.googleAccount.create({ data: { id: 1, refreshToken: "r", calendarId: "cal-top3" } });
+    await prisma.googleAccount.create({ data: { id: 1, calendarId: "cal-top3" } });
+    await saveTokens({ refreshToken: "r" });
   });
 
   it("creates, updates with a checkmark, and deletes an event for a dated task", async () => {

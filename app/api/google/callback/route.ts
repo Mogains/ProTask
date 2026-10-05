@@ -1,5 +1,6 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { backfill, connectWithCode } from "@/lib/google";
+import { logError } from "@/lib/redact";
 
 export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams;
@@ -14,9 +15,9 @@ export async function GET(req: NextRequest) {
   try {
     await connectWithCode(code);
   } catch (e) {
-    console.error("[calendar] connect failed:", e);
+    logError("calendar connect", e);
     return back("error");
   }
-  after(() => backfill().catch((e) => console.error("[calendar] backfill failed:", e)));
+  after(() => backfill().catch((e) => logError("calendar backfill", e)));
   return back("connected");
 }

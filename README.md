@@ -56,6 +56,27 @@ xcodebuild -project Top3.xcodeproj -scheme Top3 -derivedDataPath build test    #
 ./scripts/package.sh                                                           # make dist/ProTask.dmg
 ```
 
+## Secrets and setup
+
+This repo is public, so nothing secret is committed, and the Mac app needs no credentials at all: it talks to Calendar.app through EventKit.
+
+The web version needs your own Google OAuth client to sync with Google Calendar:
+
+1. In [Google Cloud Console](https://console.cloud.google.com/), create a project and enable the **Google Calendar API**.
+2. Set up the OAuth consent screen (External, Testing) and add yourself as a test user.
+3. Create an **OAuth client ID** of type *Web application*, with the redirect URI `http://localhost:3000/api/google/callback`.
+4. Copy `.env.example` to `.env` and paste in the client ID and secret. `.env` is gitignored.
+
+When you connect, Google's access and refresh tokens are stored in your **macOS Keychain** (item "ProTask Web: Google Calendar"), never in the database or a file. On other systems, set `TOKEN_STORE=encrypted` and a `TOKEN_ENCRYPTION_KEY` (`openssl rand -base64 32`), and they are stored encrypted with AES-256-GCM.
+
+To keep secrets out of git:
+
+- `npm install` turns on a pre-commit hook that runs [gitleaks](https://github.com/gitleaks/gitleaks) on staged changes (`brew install gitleaks`).
+- A GitHub Actions workflow scans the full history on every push.
+- Logs show only error codes. Tokens, URLs, emails and task titles are stripped out.
+
+If a secret ever lands in a commit, rotate it first, then scrub it from history. Deleting it in a new commit is not enough.
+
 ## Learn more
 
 - [Mac app guide](macos/README.md): every feature, how calendar sync works, where your data lives, and the project layout.
