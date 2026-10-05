@@ -3,5 +3,11 @@ import path from "node:path";
 
 export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname, ".") } },
-  test: { include: ["tests/**/*.test.ts"] },
+  test: {
+    include: ["tests/**/*.test.ts"],
+    // Tests that touch the database use a separate throwaway SQLite file.
+    env: { DATABASE_URL: "file:./test.db", GOOGLE_CLIENT_ID: "test-id", GOOGLE_CLIENT_SECRET: "test-secret" },
+    globalSetup: ["tests/setup-db.ts"],
+    fileParallelism: false,
+  },
 });

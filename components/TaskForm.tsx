@@ -51,18 +51,38 @@ export function TaskForm({ task, defaultList, onSave, onDelete, onClose }: Props
   }
 
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4" onMouseDown={onClose}>
+    <div
+      className="fixed inset-0 z-40 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+      onMouseDown={onClose}
+    >
       <form
         onSubmit={submit}
         onMouseDown={(e) => e.stopPropagation()}
         className="w-full max-w-lg space-y-4 rounded-t-2xl border border-zinc-200 bg-zinc-50 p-5 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900 sm:rounded-2xl"
       >
         <h2 className="text-lg font-semibold">{task ? "Edit task" : "New task"}</h2>
-        <input ref={titleRef} className={field} placeholder="What needs doing?" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} />
-        <textarea className={`${field} min-h-20`} placeholder="Notes (optional)" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <input
+          ref={titleRef}
+          className={field}
+          placeholder="What needs doing?"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          maxLength={200}
+        />
+        <textarea
+          className={`${field} min-h-20`}
+          placeholder="Notes (optional)"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
 
         <Segmented label="List" value={list} onChange={setList} options={LISTS.map((l) => [l, LIST_LABEL[l]])} />
-        <Segmented label="Priority" value={priority} onChange={setPriority} options={PRIORITIES.map((p) => [p, PRIORITY_LABEL[p]])} />
+        <Segmented
+          label="Priority"
+          value={priority}
+          onChange={setPriority}
+          options={PRIORITIES.map((p) => [p, PRIORITY_LABEL[p]])}
+        />
 
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm text-zinc-500">
@@ -71,16 +91,36 @@ export function TaskForm({ task, defaultList, onSave, onDelete, onClose }: Props
           </label>
           <label className="text-sm text-zinc-500">
             Time (optional)
-            <input type="time" className={`${field} mt-1`} value={time} disabled={!date} onChange={(e) => setTime(e.target.value)} />
+            <input
+              type="time"
+              className={`${field} mt-1`}
+              value={time}
+              disabled={!date}
+              onChange={(e) => setTime(e.target.value)}
+            />
           </label>
         </div>
 
         <label className="block text-sm text-zinc-500">
           Estimated minutes
           <div className="mt-1 flex gap-2">
-            <input type="number" min={1} max={1440} inputMode="numeric" className={field} placeholder="e.g. 25" value={estimate} onChange={(e) => setEstimate(e.target.value)} />
+            <input
+              type="number"
+              min={1}
+              max={1440}
+              inputMode="numeric"
+              className={field}
+              placeholder="e.g. 25"
+              value={estimate}
+              onChange={(e) => setEstimate(e.target.value)}
+            />
             {[15, 30, 60].map((m) => (
-              <button key={m} type="button" onClick={() => setEstimate(String(m))} className="rounded-lg border border-zinc-300 px-3 text-sm dark:border-zinc-700">
+              <button
+                key={m}
+                type="button"
+                onClick={() => setEstimate(String(m))}
+                className="rounded-lg border border-zinc-300 px-3 text-sm dark:border-zinc-700"
+              >
                 {m}
               </button>
             ))}
@@ -89,15 +129,26 @@ export function TaskForm({ task, defaultList, onSave, onDelete, onClose }: Props
 
         <div className="flex items-center gap-2 pt-1">
           {onDelete && (
-            <button type="button" onClick={onDelete} className="rounded-lg px-3 py-2 text-sm text-rose-500 hover:bg-rose-500/10">
+            <button
+              type="button"
+              onClick={onDelete}
+              className="rounded-lg px-3 py-2 text-sm text-rose-500 hover:bg-rose-500/10"
+            >
               Delete
             </button>
           )}
           <div className="flex-1" />
-          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-500/10">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-4 py-2 text-sm text-zinc-500 hover:bg-zinc-500/10"
+          >
             Cancel
           </button>
-          <button type="submit" className="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-300">
+          <button
+            type="submit"
+            className="rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-300"
+          >
             {task ? "Save" : "Add task"}
           </button>
         </div>
@@ -106,7 +157,17 @@ export function TaskForm({ task, defaultList, onSave, onDelete, onClose }: Props
   );
 }
 
-function Segmented({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: [string, string][] }) {
+function Segmented({
+  label,
+  value,
+  onChange,
+  options,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: [string, string][];
+}) {
   return (
     <div>
       <div className="mb-1 text-sm text-zinc-500">{label}</div>

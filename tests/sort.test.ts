@@ -34,7 +34,11 @@ describe("auto sort", () => {
 
   it("breaks due-date ties by priority, high first", () => {
     const d = new Date(2026, 9, 6);
-    const ts = [task("low", { dueAt: d, priority: "LOW" }), task("high", { dueAt: d, priority: "HIGH" }), task("med", { dueAt: d })];
+    const ts = [
+      task("low", { dueAt: d, priority: "LOW" }),
+      task("high", { dueAt: d, priority: "HIGH" }),
+      task("med", { dueAt: d }),
+    ];
     expect(ids(ts)).toEqual(["high", "med", "low"]);
   });
 

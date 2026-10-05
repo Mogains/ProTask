@@ -36,17 +36,25 @@ export function TopThree({ bySlot, showPrompt, onDismissPrompt, allDone, ...hand
       <div className="mb-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <h2 className="text-lg font-semibold">Today’s Top 3</h2>
         <span className="text-sm text-zinc-500">
-          {allDone ? "All done. Enjoy the rest of your day 🎉" : filled ? `${doneCount}/${filled} done` : "Pick three things that matter today"}
+          {allDone
+            ? "All done. Enjoy the rest of your day 🎉"
+            : filled
+              ? `${doneCount}/${filled} done`
+              : "Pick three things that matter today"}
         </span>
       </div>
 
       {showPrompt && (
         <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl bg-amber-400/15 px-4 py-3 text-sm">
           <span className="flex-1">
-            ☀️ <strong>New day!</strong> Pick your Top 3: tap ☆ on a task, drag it into a slot, or hover it and press 1, 2 or 3.
-            Yesterday’s unfinished picks are back in their lists.
+            ☀️ <strong>New day!</strong> Pick your Top 3: tap ☆ on a task, drag it into a slot, or hover it and press 1,
+            2 or 3. Yesterday’s unfinished picks are back in their lists.
           </span>
-          <button type="button" onClick={onDismissPrompt} className="rounded-lg px-2 py-1 text-zinc-500 hover:bg-black/5 dark:hover:bg-white/5">
+          <button
+            type="button"
+            onClick={onDismissPrompt}
+            className="rounded-lg px-2 py-1 text-zinc-500 hover:bg-black/5 dark:hover:bg-white/5"
+          >
             Not now
           </button>
         </div>
@@ -98,7 +106,16 @@ function PinnedTask({ task, today, onToggle, onEdit, onUnpin, onActivate }: Card
       aria-roledescription="draggable task"
       className={`touch-manipulation outline-none focus-visible:rounded-xl focus-visible:ring-2 focus-visible:ring-amber-400 ${isDragging ? "opacity-30" : ""}`}
     >
-      <TaskCard task={task} today={today} onToggle={onToggle} onEdit={onEdit} onStar={onUnpin} onActivate={onActivate} starred stayOnComplete />
+      <TaskCard
+        task={task}
+        today={today}
+        onToggle={onToggle}
+        onEdit={onEdit}
+        onStar={onUnpin}
+        onActivate={onActivate}
+        starred
+        stayOnComplete
+      />
     </div>
   );
 }

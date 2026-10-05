@@ -23,7 +23,17 @@ type Props = {
   dragging?: boolean;
 };
 
-export function TaskCard({ task, today, onToggle, onEdit, onStar, onActivate, stayOnComplete, starred, dragging }: Props) {
+export function TaskCard({
+  task,
+  today,
+  onToggle,
+  onEdit,
+  onStar,
+  onActivate,
+  stayOnComplete,
+  starred,
+  dragging,
+}: Props) {
   const [completing, setCompleting] = useState(false);
   const checked = task.completed || completing;
   const due = formatDue(task, today);
@@ -34,10 +44,13 @@ export function TaskCard({ task, today, onToggle, onEdit, onStar, onActivate, st
     if (completing) return;
     setCompleting(true);
     // Let the check animation play before the card leaves the list.
-    setTimeout(() => {
-      onToggle(task, true);
-      setCompleting(false);
-    }, stayOnComplete ? 150 : 550);
+    setTimeout(
+      () => {
+        onToggle(task, true);
+        setCompleting(false);
+      },
+      stayOnComplete ? 150 : 550,
+    );
   }
 
   return (
@@ -79,7 +92,12 @@ export function TaskCard({ task, today, onToggle, onEdit, onStar, onActivate, st
         className="min-w-0 flex-1 text-left"
         aria-label={`Edit "${task.title}"`}
       >
-        <div className={["break-words text-[15px] leading-snug transition-colors", checked ? "text-zinc-400 line-through dark:text-zinc-500" : ""].join(" ")}>
+        <div
+          className={[
+            "break-words text-[15px] leading-snug transition-colors",
+            checked ? "text-zinc-400 line-through dark:text-zinc-500" : "",
+          ].join(" ")}
+        >
           {task.title}
         </div>
         {(due || est || task.notes || task.priority !== "MED") && (
@@ -90,7 +108,11 @@ export function TaskCard({ task, today, onToggle, onEdit, onStar, onActivate, st
             {due && <span className={due.overdue && !task.completed ? "text-rose-500" : ""}>📅 {due.label}</span>}
             {est && <span>⏱ {est}</span>}
             {task.notes && <span title={task.notes}>📝</span>}
-            {task.syncError && <span title={task.syncError} className="text-amber-500">⚠ calendar</span>}
+            {task.syncError && (
+              <span title={task.syncError} className="text-amber-500">
+                ⚠ calendar
+              </span>
+            )}
           </div>
         )}
       </button>

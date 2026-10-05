@@ -25,7 +25,12 @@ export function DoneSection({ tasks, onToggle, onDelete }: Props) {
               ✓
             </button>
             <span className="flex-1 text-sm text-zinc-500 line-through">{t.title}</span>
-            <button type="button" onClick={() => onDelete(t)} className="text-xs text-zinc-400 hover:text-rose-500" aria-label={`Delete "${t.title}"`}>
+            <button
+              type="button"
+              onClick={() => onDelete(t)}
+              className="text-xs text-zinc-400 hover:text-rose-500"
+              aria-label={`Delete "${t.title}"`}
+            >
               Delete
             </button>
           </li>

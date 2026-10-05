@@ -10,7 +10,15 @@ const full: Occupant[] = [
 describe("Top 3 limit", () => {
   it("fills the first free slot when starring", () => {
     expect(planTopAssignment([], "x")).toEqual({ ok: true, slot: 1, displaced: null });
-    expect(planTopAssignment([{ slot: 1, taskId: "a" }, { slot: 3, taskId: "c" }], "x")).toEqual({ ok: true, slot: 2, displaced: null });
+    expect(
+      planTopAssignment(
+        [
+          { slot: 1, taskId: "a" },
+          { slot: 3, taskId: "c" },
+        ],
+        "x",
+      ),
+    ).toEqual({ ok: true, slot: 2, displaced: null });
   });
 
   it("refuses a 4th task when all three slots are taken", () => {
@@ -25,7 +33,11 @@ describe("Top 3 limit", () => {
       if (plan.ok) occ = applyPlan(occ, id, plan);
     }
     expect(occ.map((o) => o.taskId)).toEqual(["a", "b", "c"]);
-    for (const [id, slot] of [["d", 2], ["e", 1], ["a", 3]] as const) {
+    for (const [id, slot] of [
+      ["d", 2],
+      ["e", 1],
+      ["a", 3],
+    ] as const) {
       const plan = planTopAssignment(occ, id, slot);
       if (plan.ok) occ = applyPlan(occ, id, plan);
       expect(occ.length).toBeLessThanOrEqual(3);
@@ -46,7 +58,12 @@ describe("Top 3 limit", () => {
   it("moving between slots swaps the two tasks", () => {
     const plan = planTopAssignment(full, "a", 3);
     expect(plan).toEqual({ ok: true, slot: 3, displaced: { taskId: "c", toSlot: 1 } });
-    if (plan.ok) expect(applyPlan(full, "a", plan)).toEqual([{ slot: 1, taskId: "c" }, { slot: 2, taskId: "b" }, { slot: 3, taskId: "a" }]);
+    if (plan.ok)
+      expect(applyPlan(full, "a", plan)).toEqual([
+        { slot: 1, taskId: "c" },
+        { slot: 2, taskId: "b" },
+        { slot: 3, taskId: "a" },
+      ]);
   });
 
   it("rejects slots other than 1, 2 and 3", () => {

@@ -22,5 +22,9 @@ export async function runMorningReset(today = dayKey()): Promise<string[]> {
 export async function refreshTodayLog(today = dayKey()) {
   const tops = await prisma.task.findMany({ where: { topSlot: { not: null }, topDate: today } });
   const top3Complete = tops.length === 3 && tops.every((t) => t.completed);
-  await prisma.dayLog.upsert({ where: { date: today }, create: { date: today, top3Complete }, update: { top3Complete } });
+  await prisma.dayLog.upsert({
+    where: { date: today },
+    create: { date: today, top3Complete },
+    update: { top3Complete },
+  });
 }

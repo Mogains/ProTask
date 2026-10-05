@@ -21,6 +21,7 @@ import {
   assignTop,
   createTask,
   deleteTask,
+  disconnectGoogle,
   dismissPrompt,
   getState,
   removeTop,
@@ -36,6 +37,7 @@ import { normalizeInput } from "@/lib/taskInput";
 import { isSlot, planTopAssignment, SLOTS, TOP3_FULL_MESSAGE, type SlotNumber } from "@/lib/top3";
 import { isListKind, LISTS, type ListKind, type Snapshot, type Task, type TaskInput } from "@/lib/types";
 import { AutoSortToggle } from "./AutoSortToggle";
+import { CalendarSidebar } from "./CalendarSidebar";
 import { Confetti } from "./Confetti";
 import { DoneSection } from "./DoneSection";
 import { Header } from "./Header";
@@ -48,10 +50,12 @@ import { useStore } from "./useStore";
 
 type Order = Record<ListKind, string[]>;
 
-const patchTask = (id: string, patch: Partial<Task>) => (s: Snapshot): Snapshot => ({
-  ...s,
-  tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-});
+const patchTask =
+  (id: string, patch: Partial<Task>) =>
+  (s: Snapshot): Snapshot => ({
+    ...s,
+    tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+  });
 
 function isTyping(e: KeyboardEvent) {
   const el = e.target as HTMLElement | null;
@@ -69,7 +73,10 @@ function containerOf(id: string, order: Order): ListKind | null {
 /** Top 3 slots win when the pointer is inside one; otherwise use the sortable-friendly closestCorners. */
 const collisionDetection: CollisionDetection = (args) => {
   const isSlotId = (id: unknown) => String(id).startsWith("slot:");
-  const slotHits = pointerWithin({ ...args, droppableContainers: args.droppableContainers.filter((c) => isSlotId(c.id)) });
+  const slotHits = pointerWithin({
+    ...args,
+    droppableContainers: args.droppableContainers.filter((c) => isSlotId(c.id)),
+  });
   if (slotHits.length) return slotHits;
   return closestCorners({ ...args, droppableContainers: args.droppableContainers.filter((c) => !isSlotId(c.id)) });
 };
@@ -83,7 +90,8 @@ export default function App({ initial }: { initial: Snapshot }) {
   const lists = useMemo(() => {
     const out: Record<ListKind, Task[]> = { HAVE_TO: [], NICE_TO: [] };
     for (const t of tasks) if (!t.completed && t.topSlot == null && isListKind(t.list)) out[t.list].push(t);
-    for (const l of LISTS) out[l] = snap.autoSort[l] ? sortTasks(out[l]) : out[l].sort((a, b) => a.position - b.position);
+    for (const l of LISTS)
+      out[l] = snap.autoSort[l] ? sortTasks(out[l]) : out[l].sort((a, b) => a.position - b.position);
     return out;
   }, [tasks, snap.autoSort]);
 
@@ -94,7 +102,7 @@ export default function App({ initial }: { initial: Snapshot }) {
   }, [tasks]);
   const pinned = SLOTS.map((s) => bySlot[s]).filter((t): t is Task => !!t);
   const allDone = pinned.length === 3 && pinned.every((t) => t.completed);
-  const showPrompt = !snap.promptDismissed && pinned.length === 0 && (lists.HAVE_TO.length + lists.NICE_TO.length) > 0;
+  const showPrompt = !snap.promptDismissed && pinned.length === 0 && lists.HAVE_TO.length + lists.NICE_TO.length > 0;
 
   const done = useMemo(
     () =>
@@ -109,14 +117,19 @@ export default function App({ initial }: { initial: Snapshot }) {
   // ---------- task actions ----------
   const toggle = useCallback(
     (task: Task, completed: boolean) =>
-      run(patchTask(task.id, { completed, completedAt: completed ? new Date() : null }), () => toggleComplete(task.id, completed)),
+      run(patchTask(task.id, { completed, completedAt: completed ? new Date() : null }), () =>
+        toggleComplete(task.id, completed),
+      ),
     [run],
   );
 
   const remove = useCallback(
     (task: Task) => {
       setForm(null);
-      run((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== task.id) }), () => deleteTask(task.id));
+      run(
+        (s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== task.id) }),
+        () => deleteTask(task.id),
+      );
       showToast(`Deleted “${task.title}”`);
     },
     [run, showToast],
@@ -149,7 +162,10 @@ export default function App({ initial }: { initial: Snapshot }) {
         createdAt: now,
         updatedAt: now,
       };
-      run((s) => ({ ...s, tasks: [...s.tasks, temp] }), () => createTask(input));
+      run(
+        (s) => ({ ...s, tasks: [...s.tasks, temp] }),
+        () => createTask(input),
+      );
     }
   }
 
@@ -201,7 +217,10 @@ export default function App({ initial }: { initial: Snapshot }) {
   // New day while the app is open (or resumed on the phone): reload so the morning reset runs.
   useEffect(() => {
     const check = () => {
-      if (document.visibilityState === "visible" && dayKey() !== snap.today) getState().then(setSnap).catch(() => {});
+      if (document.visibilityState === "visible" && dayKey() !== snap.today)
+        getState()
+          .then(setSnap)
+          .catch(() => {});
     };
     const id = setInterval(check, 60_000);
     document.addEventListener("visibilitychange", check);
@@ -211,13 +230,33 @@ export default function App({ initial }: { initial: Snapshot }) {
     };
   }, [snap.today, setSnap]);
 
+  // Result of the Google OAuth redirect (?google=...).
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const g = url.searchParams.get("google");
+    if (!g) return;
+    const messages: Record<string, string> = {
+      connected: "Google Calendar connected. Syncing your tasks to the “Top 3” calendar.",
+      denied: "Google Calendar wasn't connected.",
+      "not-configured": "Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET to .env first. See the README.",
+      "bad-state": "That sign-in link expired. Please try connecting again.",
+      error: "Couldn't connect Google Calendar. Check the server log.",
+    };
+    showToast(messages[g] ?? "Google Calendar: " + g);
+    url.searchParams.delete("google");
+    window.history.replaceState(null, "", url.pathname + url.search);
+  }, [showToast]);
+
   // ---------- drag and drop ----------
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-  const baseOrder = useMemo<Order>(() => ({ HAVE_TO: lists.HAVE_TO.map((t) => t.id), NICE_TO: lists.NICE_TO.map((t) => t.id) }), [lists]);
+  const baseOrder = useMemo<Order>(
+    () => ({ HAVE_TO: lists.HAVE_TO.map((t) => t.id), NICE_TO: lists.NICE_TO.map((t) => t.id) }),
+    [lists],
+  );
   const [preview, setPreview] = useState<Order | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const order = preview ?? baseOrder;
@@ -280,7 +319,11 @@ export default function App({ initial }: { initial: Snapshot }) {
           return i < 0 ? t : { ...t, list, position: (i + 1) * 1000, topSlot: null, topDate: null };
         }),
       }),
-      () => reorderList(list, ids.filter((id) => !id.startsWith("tmp-"))),
+      () =>
+        reorderList(
+          list,
+          ids.filter((id) => !id.startsWith("tmp-")),
+        ),
     );
   }
 
@@ -373,26 +416,40 @@ export default function App({ initial }: { initial: Snapshot }) {
             onUnpin={unpin}
             onActivate={onActivate}
           />
-          <div className="grid gap-4 md:grid-cols-2">
-            {LISTS.map((l) => (
-              <TaskList
-                key={l}
-                list={l}
-                tasks={shown(l)}
-                today={today}
-                onToggle={toggle}
-                onEdit={openEdit}
-                onAdd={openNew}
-                onStar={(t) => pin(t)}
-                onActivate={onActivate}
-                headerExtra={<AutoSortToggle on={snap.autoSort[l]} onToggle={() => toggleAutoSort(l)} />}
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+            <div className="min-w-0 space-y-6">
+              <div className="grid gap-4 md:grid-cols-2">
+                {LISTS.map((l) => (
+                  <TaskList
+                    key={l}
+                    list={l}
+                    tasks={shown(l)}
+                    today={today}
+                    onToggle={toggle}
+                    onEdit={openEdit}
+                    onAdd={openNew}
+                    onStar={(t) => pin(t)}
+                    onActivate={onActivate}
+                    headerExtra={<AutoSortToggle on={snap.autoSort[l]} onToggle={() => toggleAutoSort(l)} />}
+                  />
+                ))}
+              </div>
+              <DoneSection tasks={done} onToggle={toggle} onDelete={remove} />
+            </div>
+            <div className="lg:sticky lg:top-6 lg:self-start">
+              <CalendarSidebar
+                {...snap.google}
+                onDisconnect={() =>
+                  run((s) => ({ ...s, google: { ...s.google, connected: false, email: null } }), disconnectGoogle)
+                }
               />
-            ))}
+            </div>
           </div>
-          <DoneSection tasks={done} onToggle={toggle} onDelete={remove} />
         </div>
         <DragOverlay dropAnimation={{ duration: 180, easing: "ease-out" }}>
-          {activeTask ? <TaskCard task={activeTask} today={today} onToggle={() => {}} onEdit={() => {}} dragging /> : null}
+          {activeTask ? (
+            <TaskCard task={activeTask} today={today} onToggle={() => {}} onEdit={() => {}} dragging />
+          ) : null}
         </DragOverlay>
       </DndContext>
 

@@ -1,8 +1,10 @@
 "use server";
 
+import { after } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSnapshot } from "@/lib/state";
 import { dayKey } from "@/lib/day";
+import { deleteEventFor, disconnect, syncTasks } from "@/lib/google";
 import { sortTasks } from "@/lib/sort";
 import { planTopAssignment, TOP3_FULL_MESSAGE } from "@/lib/top3";
 import { refreshTodayLog } from "@/lib/topServer";
@@ -11,6 +13,12 @@ import { isListKind, type ActionResult, type ListKind, type Snapshot, type TaskI
 
 async function result(error?: string): Promise<ActionResult> {
   return { snapshot: await getSnapshot(), ...(error ? { error } : {}) };
+}
+
+/** Update calendar events after the response is sent, so the UI never waits on Google. */
+function sync(...ids: (string | null | undefined)[]) {
+  const list = ids.filter((x): x is string => !!x);
+  if (list.length) after(() => syncTasks(list));
 }
 
 async function endOfList(list: ListKind): Promise<number> {
@@ -24,7 +32,8 @@ export async function getState(): Promise<Snapshot> {
 
 export async function createTask(input: TaskInput): Promise<ActionResult> {
   const data = normalizeInput(input);
-  await prisma.task.create({ data: { ...data, position: await endOfList(data.list) } });
+  const task = await prisma.task.create({ data: { ...data, position: await endOfList(data.list) } });
+  sync(task.id);
   return result();
 }
 
@@ -33,11 +42,14 @@ export async function updateTask(id: string, input: TaskInput): Promise<ActionRe
   const existing = await prisma.task.findUniqueOrThrow({ where: { id } });
   const position = existing.list === data.list ? existing.position : await endOfList(data.list);
   await prisma.task.update({ where: { id }, data: { ...data, position } });
+  sync(id);
   return result();
 }
 
 export async function deleteTask(id: string): Promise<ActionResult> {
+  const task = await prisma.task.findUnique({ where: { id }, select: { calendarEventId: true } });
   await prisma.task.deleteMany({ where: { id } });
+  if (task?.calendarEventId) after(() => deleteEventFor(id, task.calendarEventId));
   await refreshTodayLog();
   return result();
 }
@@ -47,6 +59,7 @@ export async function toggleComplete(id: string, completed: boolean): Promise<Ac
     where: { id },
     data: { completed, completedAt: completed ? new Date() : null },
   });
+  sync(id);
   await refreshTodayLog();
   return result();
 }
@@ -54,12 +67,18 @@ export async function toggleComplete(id: string, completed: boolean): Promise<Ac
 /** Persist a list's full order after a drag. Also moves tasks into `list` if they came from the other list. */
 export async function reorderList(list: string, orderedIds: string[]): Promise<ActionResult> {
   if (!isListKind(list)) throw new Error("Unknown list.");
+  const unpinned = await prisma.task.findMany({
+    where: { id: { in: orderedIds }, topSlot: { not: null } },
+    select: { id: true },
+  });
   await prisma.$transaction([
-    ...orderedIds.map((id, i) => prisma.task.updateMany({ where: { id }, data: { list, position: (i + 1) * 1000, topSlot: null, topDate: null } }),
+    ...orderedIds.map((id, i) =>
+      prisma.task.updateMany({ where: { id }, data: { list, position: (i + 1) * 1000, topSlot: null, topDate: null } }),
     ),
     // A manual drag switches this list to manual order until auto sort is turned back on.
     prisma.listSetting.upsert({ where: { list }, create: { list, autoSort: false }, update: { autoSort: false } }),
   ]);
+  sync(...unpinned.map((t) => t.id));
   await refreshTodayLog();
   return result();
 }
@@ -81,7 +100,11 @@ export async function assignTop(taskId: string, slot?: number): Promise<ActionRe
   const task = await prisma.task.findUniqueOrThrow({ where: { id: taskId } });
   if (task.completed) return result("That one's already done ✓");
   const pinned = await prisma.task.findMany({ where: { topSlot: { not: null } }, select: { id: true, topSlot: true } });
-  const plan = planTopAssignment(pinned.map((t) => ({ slot: t.topSlot!, taskId: t.id })), taskId, slot);
+  const plan = planTopAssignment(
+    pinned.map((t) => ({ slot: t.topSlot!, taskId: t.id })),
+    taskId,
+    slot,
+  );
   if (!plan.ok) return result(plan.reason === "full" ? TOP3_FULL_MESSAGE : "Pick slot 1, 2 or 3.");
 
   await prisma.$transaction(async (tx) => {
@@ -97,6 +120,7 @@ export async function assignTop(taskId: string, slot?: number): Promise<ActionRe
       });
     }
   });
+  sync(taskId, plan.displaced?.taskId);
   await refreshTodayLog(today);
   return result();
 }
@@ -104,6 +128,7 @@ export async function assignTop(taskId: string, slot?: number): Promise<ActionRe
 /** Unpin a task. It reappears in its original list. */
 export async function removeTop(taskId: string): Promise<ActionResult> {
   await prisma.task.updateMany({ where: { id: taskId }, data: { topSlot: null, topDate: null } });
+  sync(taskId);
   await refreshTodayLog();
   return result();
 }
@@ -111,6 +136,15 @@ export async function removeTop(taskId: string): Promise<ActionResult> {
 /** Hide today's "pick your Top 3" prompt. */
 export async function dismissPrompt(): Promise<ActionResult> {
   const date = dayKey();
-  await prisma.dayLog.upsert({ where: { date }, create: { date, promptDismissed: true }, update: { promptDismissed: true } });
+  await prisma.dayLog.upsert({
+    where: { date },
+    create: { date, promptDismissed: true },
+    update: { promptDismissed: true },
+  });
+  return result();
+}
+
+export async function disconnectGoogle(): Promise<ActionResult> {
+  await disconnect();
   return result();
 }
