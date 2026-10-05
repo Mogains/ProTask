@@ -15,8 +15,13 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         case open = "OPEN"
     }
 
-    /// Called on the main thread for every notification response.
+    /// Called on the main thread for every Parking Lot notification response.
     var onAction: ((UUID, Action) -> Void)?
+    /// Called on the main thread for other notifications (wrap-up, focus, follow-ups): identifier and action id.
+    var onOther: ((String, String) -> Void)?
+
+    static let eveningID = "evening-wrapup"
+    static let generalCategory = "PROTASK_GENERAL"
 
     private var center: UNUserNotificationCenter { .current() }
 
@@ -29,9 +34,10 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
             UNNotificationAction(identifier: Action.keep.rawValue, title: "Keep in Parking Lot", options: []),
             UNNotificationAction(identifier: Action.delete.rawValue, title: "Delete", options: [.destructive]),
         ]
-        center.setNotificationCategories([
+        center.setNotificationCategories(Set([
             UNNotificationCategory(identifier: Self.category, actions: actions, intentIdentifiers: [], options: []),
-        ])
+            UNNotificationCategory(identifier: Self.generalCategory, actions: [], intentIdentifiers: [], options: []),
+        ] + extraCategories))
     }
 
     func requestAuthorization() async {
@@ -55,6 +61,36 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
         center.add(UNNotificationRequest(identifier: id.uuidString, content: content, trigger: trigger))
     }
 
+    /// Categories added by other features (follow-ups).
+    var extraCategories: [UNNotificationCategory] = []
+
+    /// A notification at a fixed time every day.
+    func scheduleDaily(identifier: String, title: String, body: String, hour: Int, minute: Int) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        content.categoryIdentifier = Self.generalCategory
+        let trigger = UNCalendarNotificationTrigger(dateMatching: DateComponents(hour: hour, minute: minute), repeats: true)
+        center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
+    }
+
+    /// A one-off notification at a date (or after a delay).
+    func scheduleOnce(identifier: String, title: String, body: String, at date: Date, category: String = generalCategory) {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        content.categoryIdentifier = category
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, date.timeIntervalSinceNow), repeats: false)
+        center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: trigger))
+    }
+
+    func cancel(identifier: String) {
+        center.removePendingNotificationRequests(withIdentifiers: [identifier])
+        center.removeDeliveredNotifications(withIdentifiers: [identifier])
+    }
+
     func cancel(id: UUID) {
         center.removePendingNotificationRequests(withIdentifiers: [id.uuidString])
         center.removeDeliveredNotifications(withIdentifiers: [id.uuidString])
@@ -74,7 +110,12 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         defer { completionHandler() }
-        guard let id = UUID(uuidString: response.notification.request.identifier) else { return }
+        let identifier = response.notification.request.identifier
+        guard let id = UUID(uuidString: identifier) else {
+            let actionID = response.actionIdentifier
+            DispatchQueue.main.async { self.onOther?(identifier, actionID) }
+            return
+        }
         let action = Action(rawValue: response.actionIdentifier) ?? .open
         DispatchQueue.main.async { self.onAction?(id, action) }
     }

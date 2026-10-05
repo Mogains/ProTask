@@ -55,6 +55,12 @@ struct ContentView: View {
         }
         .animation(Theme.Motion.list, value: model.showPlanning)
         .overlay {
+            if model.showWrapUp {
+                WrapUpView(tasks: tasks).transition(.opacity)
+            }
+        }
+        .animation(Theme.Motion.standard, value: model.showWrapUp)
+        .overlay {
             if model.showPalette {
                 CommandPalette(tasks: tasks).transition(.opacity)
             }

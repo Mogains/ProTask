@@ -88,6 +88,7 @@ final class AppModel {
             if let l = ListKind(rawValue: s.listRaw) { autoSort[l] = s.autoSort }
         }
         notifications.onAction = { [weak self] id, action in self?.handleIdeaAction(id: id, action: action) }
+        notifications.onOther = { [weak self] identifier, action in self?.handleNotification(identifier, action: action) }
     }
 
     // MARK: Launch and day rollover
@@ -121,6 +122,7 @@ final class AppModel {
         if ProcessInfo.processInfo.environment["TOP3_SKIP_PERMISSIONS"] != nil { return }
         #endif
         await notifications.requestAuthorization()
+        scheduleEveningWrapUp()
         await calendar.requestAccess()
         syncAllEvents()
         await reconcileReminders()
@@ -435,7 +437,8 @@ final class AppModel {
 
     /// Hook for features that add palette actions (focus timer, review…).
     func extraPaletteActions() -> [PaletteItem] {
-        [PaletteItem(id: "plan", title: "Plan my day", kind: .action, icon: .today) { [self] in showPlanning = true }]
+        [PaletteItem(id: "plan", title: "Plan my day", kind: .action, icon: .today) { [self] in showPlanning = true },
+         PaletteItem(id: "wrap", title: "Wrap up the day", kind: .action, icon: .done) { [self] in showWrapUp = true }]
     }
 
     // MARK: Quick capture
@@ -607,7 +610,7 @@ final class AppModel {
 
     /// Extra states to capture in debug snapshots (sheets, overlays added by later features).
     func debugExtraShots() -> [(String, () -> Void)] {
-        [("planning", { self.showPlanning = true })]
+        [("planning", { self.showPlanning = true }), ("wrapup", { self.showWrapUp = true })]
     }
 
     private func captureWindow(as name: String, in dir: String, before: () -> Void) {

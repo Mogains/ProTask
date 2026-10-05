@@ -86,6 +86,7 @@ enum Theme {
         static let paletteWidth: CGFloat = 560
         static let paletteTopOffset: CGFloat = 96
         static let paletteMaxRows = 9
+        static let wrapUpMaxHeight: CGFloat = 420
         /// Clearance for the window's traffic lights when the sidebar is hidden.
         static let trafficLights: CGFloat = 72
         static let capturePanelHeight: CGFloat = 112

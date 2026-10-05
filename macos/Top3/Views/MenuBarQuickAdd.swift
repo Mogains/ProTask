@@ -64,6 +64,10 @@ struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @AppStorage("showMenuBarExtra") private var showMenuBar = true
     @AppStorage("resetHour") private var resetHour = DayKey.defaultResetHour
+    @AppStorage("morningPlanning") private var morningPlanning = true
+    @AppStorage(AppModel.eveningEnabledKey) private var eveningOn = true
+    @AppStorage(AppModel.eveningHourKey) private var eveningHour = 18
+    @AppStorage(AppModel.eveningMinuteKey) private var eveningMinute = 0
     @State private var notificationStatus = "Checking…"
 
     var body: some View {
@@ -87,6 +91,21 @@ struct SettingsView: View {
                 .fixedSize()
                 .font(Theme.Fonts.small)
                 .onChange(of: resetHour) { model.checkDay() }
+            }
+            Hairline().padding(.vertical, Theme.Space.s)
+            SectionLabel(title: "Daily rhythm").padding(.horizontal, Theme.Space.l).frame(height: Theme.Size.row)
+            row("Morning planning") {
+                Toggle("Show the planning screen on the first open of the day", isOn: $morningPlanning)
+                    .toggleStyle(.switch).controlSize(.mini).labelsHidden()
+            }
+            row("Evening wrap-up") {
+                Toggle("Evening wrap-up reminder", isOn: $eveningOn)
+                    .toggleStyle(.switch).controlSize(.mini).labelsHidden()
+                    .onChange(of: eveningOn) { model.scheduleEveningWrapUp() }
+                DatePicker("Time", selection: eveningTime, displayedComponents: .hourAndMinute)
+                    .labelsHidden()
+                    .datePickerStyle(.field)
+                    .disabled(!eveningOn)
             }
             Hairline().padding(.vertical, Theme.Space.s)
             SectionLabel(title: "Permissions").padding(.horizontal, Theme.Space.l).frame(height: Theme.Size.row)
@@ -131,6 +150,16 @@ struct SettingsView: View {
         }
         .padding(.horizontal, Theme.Space.l)
         .frame(height: Theme.Size.row)
+    }
+
+    private var eveningTime: Binding<Date> {
+        Binding {
+            Calendar.current.date(bySettingHour: eveningHour, minute: eveningMinute, second: 0, of: Date()) ?? Date()
+        } set: { d in
+            eveningHour = Calendar.current.component(.hour, from: d)
+            eveningMinute = Calendar.current.component(.minute, from: d)
+            model.scheduleEveningWrapUp()
+        }
     }
 
     private func hourLabel(_ h: Int) -> String {
