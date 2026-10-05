@@ -13,66 +13,101 @@ struct TaskEditor: View {
     @State private var dueDate = Calendar.current.startOfDay(for: Date())
     @State private var hasTime = false
     @State private var estimate = ""
-    @FocusState private var titleFocused: Bool
 
     var body: some View {
-        VStack(spacing: 0) {
-            Form {
-                TextField("Title", text: $title, prompt: Text("What needs doing?"))
-                    .focused($titleFocused)
-                TextField("Notes", text: $notes, prompt: Text("Optional"), axis: .vertical)
-                    .lineLimit(2...6)
-                Picker("List", selection: $list) {
-                    ForEach(listChoices) { Text($0.title).tag($0) }
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: Theme.Space.s) {
+                InputField(placeholder: "Task title", text: $title, font: Theme.Fonts.input, bordered: false,
+                           focusOnAppear: true, onSubmit: save)
+                InputField(placeholder: "Add notes", text: $notes, font: Theme.Fonts.small, bordered: false, axis: .vertical)
+                    .lineLimit(1...6)
+            }
+            .padding(Theme.Space.l)
+
+            Hairline()
+
+            VStack(spacing: 0) {
+                PropertyRow(label: "List") {
+                    Segments(options: listChoices, selection: $list) { $0.title }
                 }
-                .pickerStyle(.segmented)
                 if list != .parkingLot {
-                    Picker("Priority", selection: $priority) {
-                        ForEach(Priority.allCases) { Text($0.title).tag($0) }
+                    PropertyRow(label: "Priority") {
+                        Segments(options: Priority.allCases, selection: $priority) { $0.title }
                     }
-                    .pickerStyle(.segmented)
-                    Toggle("Due date", isOn: $hasDue.animation(.snappy))
-                    if hasDue {
-                        DatePicker("Date", selection: $dueDate, displayedComponents: .date)
-                        Toggle("Time", isOn: $hasTime.animation(.snappy))
-                        if hasTime {
-                            DatePicker("At", selection: $dueDate, displayedComponents: .hourAndMinute)
-                        }
-                    }
-                    LabeledContent("Estimate") {
-                        HStack(spacing: 6) {
-                            TextField("Minutes", text: $estimate, prompt: Text("min"))
-                                .labelsHidden()
-                                .frame(width: 60)
-                                .multilineTextAlignment(.trailing)
-                            ForEach([15, 30, 60], id: \.self) { m in
-                                Button("\(m)") { estimate = String(m) }.controlSize(.small)
-                            }
-                        }
-                    }
+                    PropertyRow(label: "Due") { dueControls }
+                    PropertyRow(label: "Estimate") { estimateControls }
                 }
             }
-            .formStyle(.grouped)
-            .font(Theme.body)
+            .padding(.vertical, Theme.Space.s)
 
-            HStack {
+            Hairline()
+
+            HStack(spacing: Theme.Space.xs) {
                 if let task = request.task {
-                    Button("Delete", role: .destructive) {
+                    Button("Delete") {
                         dismiss()
                         model.delete(task)
                     }
+                    .buttonStyle(.ghost)
                 }
                 Spacer()
-                Button("Cancel", role: .cancel) { dismiss() }.keyboardShortcut(.cancelAction)
-                Button(request.task == nil ? "Add Task" : "Save") { save() }
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(.ghost)
+                    .keyboardShortcut(.cancelAction)
+                Button(request.task == nil ? "Add task" : "Save") { save() }
+                    .buttonStyle(.primary)
                     .keyboardShortcut(.defaultAction)
                     .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 14)
+            .padding(Theme.Space.m)
         }
-        .frame(width: 440)
+        .frame(width: Theme.Size.sheetWidth)
+        .font(Theme.Fonts.body)
+        .foregroundStyle(Theme.Palette.text)
+        .tint(Theme.Palette.accent)
         .onAppear(perform: load)
+    }
+
+    @ViewBuilder private var dueControls: some View {
+        if hasDue {
+            HStack(spacing: Theme.Space.s) {
+                DatePicker("Date", selection: $dueDate, displayedComponents: .date)
+                    .labelsHidden()
+                    .datePickerStyle(.field)
+                    .font(Theme.Fonts.small)
+                if hasTime {
+                    DatePicker("Time", selection: $dueDate, displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                        .datePickerStyle(.field)
+                        .font(Theme.Fonts.small)
+                    IconButton(symbol: "xmark", help: "Remove time") { withAnimation(Theme.Motion.standard) { hasTime = false } }
+                } else {
+                    Button("Add time") { withAnimation(Theme.Motion.standard) { hasTime = true } }.buttonStyle(.ghost)
+                }
+                Spacer()
+                Button("Clear") { withAnimation(Theme.Motion.standard) { hasDue = false; hasTime = false } }.buttonStyle(.ghost)
+            }
+        } else {
+            Button("Set date") { withAnimation(Theme.Motion.standard) { hasDue = true } }.buttonStyle(.ghost)
+        }
+    }
+
+    private var estimateControls: some View {
+        HStack(spacing: Theme.Space.xs) {
+            TextField("", text: $estimate, prompt: Text("0").foregroundStyle(Theme.Palette.textTertiary))
+                .textFieldStyle(.plain)
+                .focusEffectDisabled()
+                .font(Theme.Fonts.small)
+                .multilineTextAlignment(.trailing)
+                .frame(width: Theme.Size.estimateField)
+                .padding(.horizontal, Theme.Space.s)
+                .frame(height: Theme.Size.iconButton)
+                .overlay(RoundedRectangle(cornerRadius: Theme.Radius.s).strokeBorder(Theme.Palette.border, lineWidth: Theme.Size.hairline))
+            Text("min").font(Theme.Fonts.small).foregroundStyle(Theme.Palette.textTertiary)
+            ForEach([15, 30, 60], id: \.self) { m in
+                Button("\(m)") { estimate = String(m) }.buttonStyle(.ghost)
+            }
+        }
     }
 
     private var listChoices: [ListKind] {
@@ -93,10 +128,10 @@ struct TaskEditor: View {
             }
             estimate = t.estimateMinutes.map(String.init) ?? ""
         }
-        titleFocused = true
     }
 
     private func save() {
+        guard !title.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         var due: Date? = nil
         if hasDue && list != .parkingLot {
             due = hasTime ? dueDate : Calendar.current.startOfDay(for: dueDate)
@@ -108,32 +143,75 @@ struct TaskEditor: View {
     }
 }
 
+private struct PropertyRow<Content: View>: View {
+    let label: String
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        HStack(spacing: Theme.Space.s) {
+            Text(label)
+                .font(Theme.Fonts.small)
+                .foregroundStyle(Theme.Palette.textTertiary)
+                .frame(width: Theme.Size.propertyLabel, alignment: .leading)
+            content()
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, Theme.Space.l)
+        .frame(minHeight: Theme.Size.row)
+    }
+}
+
+/// Inline option picker: ghost buttons, the chosen one gets a subtle fill.
+struct Segments<T: Hashable>: View {
+    let options: [T]
+    @Binding var selection: T
+    let title: (T) -> String
+
+    var body: some View {
+        HStack(spacing: Theme.Space.xxs) {
+            ForEach(options, id: \.self) { option in
+                let on = option == selection
+                Button { withAnimation(Theme.Motion.hover) { selection = option } } label: {
+                    Text(title(option))
+                        .font(Theme.Fonts.small)
+                        .foregroundStyle(on ? Theme.Palette.text : Theme.Palette.textSecondary)
+                        .padding(.horizontal, Theme.Space.s)
+                        .frame(height: Theme.Size.iconButton)
+                        .background(RoundedRectangle(cornerRadius: Theme.Radius.s).fill(on ? Theme.Palette.selected : .clear))
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
 struct QuickParkSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var text = ""
-    @FocusState private var focused: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("Park an idea", systemImage: "lightbulb").font(Theme.bodyMedium)
-            TextField("Type and press Return", text: $text)
-                .textFieldStyle(.roundedBorder)
-                .font(Theme.body)
-                .focused($focused)
-                .onSubmit {
-                    if model.addIdea(text) { model.showToast("Parked. Reminder in an hour.") }
-                    dismiss()
-                }
-            Text("Goes to the Parking Lot. You'll get a reminder in an hour to sort it.")
-                .font(Theme.secondary).foregroundStyle(.secondary)
-            HStack {
-                Spacer()
-                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+        VStack(alignment: .leading, spacing: 0) {
+            InputField(placeholder: "Park an idea…", text: $text, font: Theme.Fonts.input, leadingSymbol: "lightbulb",
+                       bordered: false, focusOnAppear: true) {
+                if model.addIdea(text) { model.showToast("Parked. Reminder in an hour.") }
+                dismiss()
             }
+            .padding(Theme.Space.l)
+            Hairline()
+            HStack {
+                Text("Goes to the Parking Lot and reminds you in an hour.")
+                Spacer()
+                Text("↩ to save   esc to cancel")
+            }
+            .font(Theme.Fonts.secondary)
+            .foregroundStyle(Theme.Palette.textTertiary)
+            .padding(.horizontal, Theme.Space.l)
+            .padding(.vertical, Theme.Space.s)
+            Button("") { dismiss() }.keyboardShortcut(.cancelAction).hidden().frame(width: 0, height: 0)
         }
-        .padding(16)
-        .frame(width: 380)
-        .onAppear { focused = true }
+        .frame(width: Theme.Size.quickAddWidth)
+        .foregroundStyle(Theme.Palette.text)
     }
 }

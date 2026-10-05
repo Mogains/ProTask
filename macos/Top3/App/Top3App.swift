@@ -2,19 +2,25 @@ import SwiftData
 import SwiftUI
 
 @main
-struct Top3App: App {
+struct ProTaskApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @AppStorage("showMenuBarExtra") private var showMenuBar = true
-    private let model = AppModel.shared
+    private let model: AppModel
+
+    init() {
+        Theme.registerFonts()
+        model = AppModel.shared
+    }
 
     var body: some Scene {
-        Window("Top 3", id: "main") {
+        Window("ProTask", id: "main") {
             ContentView()
                 .environment(model)
-                .frame(minWidth: 760, minHeight: 460)
+                .frame(minWidth: Theme.Size.windowMinWidth, minHeight: Theme.Size.windowMinHeight)
         }
+        .windowStyle(.hiddenTitleBar)
         .modelContainer(model.container)
-        .defaultSize(width: 1120, height: 720)
+        .defaultSize(width: 1180, height: 740)
         .commands { Top3Commands(model: model) }
 
         Settings {
@@ -23,7 +29,7 @@ struct Top3App: App {
                 .modelContainer(model.container)
         }
 
-        MenuBarExtra("Top 3", systemImage: "checklist", isInserted: $showMenuBar) {
+        MenuBarExtra("ProTask", systemImage: "checklist", isInserted: $showMenuBar) {
             MenuBarQuickAdd()
                 .environment(model)
                 .modelContainer(model.container)

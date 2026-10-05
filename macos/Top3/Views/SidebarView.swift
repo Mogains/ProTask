@@ -1,46 +1,120 @@
 import SwiftUI
 
+/// Flat custom sidebar: 28pt rows, subtle fill and a thin left indicator for the selection.
 struct SidebarView: View {
     @Environment(AppModel.self) private var model
     let tasks: [TaskItem]
 
     var body: some View {
-        let selection = Binding<SidebarSection?>(get: { model.section }, set: { if let s = $0 { model.section = s } })
         let pinnedOpen = tasks.filter { $0.topSlot != nil && !$0.isCompleted }.count
-        List(selection: selection) {
-            Section {
-                row(.today, "Today", "star", pinnedOpen)
-                    .dropDestination(for: TaskRef.self) { items, _ in
-                        items.first.map { model.pin($0.id) } != nil
-                    }
-            }
-            Section("Lists") {
+        VStack(alignment: .leading, spacing: 0) {
+            // Room for the traffic lights; also drags the window.
+            WindowDragArea().frame(height: Theme.Size.header)
+
+            VStack(alignment: .leading, spacing: Theme.Space.xxs) {
+                SidebarRow(section: .today, title: "Today", symbol: "star", count: pinnedOpen) { ref in
+                    model.pin(ref.id)
+                }
+
+                SectionLabel(title: "Lists")
+                    .padding(.leading, Theme.Space.s)
+                    .padding(.top, Theme.Space.l)
+                    .padding(.bottom, Theme.Space.xs)
                 ForEach(ListKind.allCases) { list in
-                    let count = model.ordered(list, in: tasks).count
-                    if list == .parkingLot {
-                        row(.list(list), list.title, list.symbol, count)
-                    } else {
-                        row(.list(list), list.title, list.symbol, count)
-                            .dropDestination(for: TaskRef.self) { items, _ in
-                                guard let ref = items.first else { return false }
-                                withAnimation(.snappy) { model.move(ref.id, to: list, before: nil, manual: false) }
-                                return true
-                            }
-                    }
+                    SidebarRow(section: .list(list), title: list.title, symbol: list.symbol,
+                               count: model.ordered(list, in: tasks).count,
+                               onDrop: list == .parkingLot ? nil : { ref in
+                                   withAnimation(Theme.Motion.list) { model.move(ref.id, to: list, before: nil, manual: false) }
+                               })
+                }
+
+                Spacer().frame(height: Theme.Space.l)
+                SidebarRow(section: .calendar, title: "Calendar", symbol: "calendar", count: 0)
+                SidebarRow(section: .done, title: "Done", symbol: "checkmark.circle", count: 0)
+            }
+            .padding(.horizontal, Theme.Space.s)
+
+            Spacer()
+
+            SettingsLink {
+                HStack(spacing: Theme.Space.s) {
+                    Image(systemName: "gearshape").font(.system(size: Theme.Size.icon)).frame(width: Theme.Space.l)
+                    Text("Settings").font(Theme.Fonts.small)
+                    Spacer()
+                }
+                .foregroundStyle(Theme.Palette.textTertiary)
+                .padding(.horizontal, Theme.Space.s)
+                .frame(height: Theme.Size.sidebarRow)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, Theme.Space.s)
+            .padding(.bottom, Theme.Space.m)
+        }
+    }
+}
+
+struct SidebarRow: View {
+    @Environment(AppModel.self) private var model
+    let section: SidebarSection
+    let title: String
+    let symbol: String
+    let count: Int
+    var onDrop: ((TaskRef) -> Void)?
+
+    @State private var hovering = false
+    @State private var targeted = false
+
+    var body: some View {
+        let selected = model.section == section
+        Button { model.section = section } label: {
+            HStack(spacing: Theme.Space.s) {
+                Image(systemName: symbol)
+                    .font(.system(size: Theme.Size.icon))
+                    .frame(width: Theme.Space.l)
+                Text(title).font(Theme.Fonts.body)
+                Spacer()
+                if count > 0 {
+                    Text("\(count)")
+                        .font(Theme.Fonts.secondary)
+                        .foregroundStyle(Theme.Palette.textTertiary)
+                        .monospacedDigit()
                 }
             }
-            Section {
-                row(.calendar, "Calendar", "calendar", 0)
-                row(.done, "Done", "checkmark.circle", 0)
+            .foregroundStyle(selected ? Theme.Palette.text : Theme.Palette.textSecondary)
+            .padding(.horizontal, Theme.Space.s)
+            .frame(height: Theme.Size.sidebarRow)
+            .background(RoundedRectangle(cornerRadius: Theme.Radius.s)
+                .fill(selected || targeted ? Theme.Palette.selected : hovering ? Theme.Palette.hover : .clear))
+            .overlay(alignment: .leading) {
+                if selected {
+                    RoundedRectangle(cornerRadius: Theme.Size.hairline)
+                        .fill(Theme.Palette.accent)
+                        .frame(width: Theme.Size.indicator, height: Theme.Size.icon)
+                }
             }
+            .contentShape(Rectangle())
         }
-        .listStyle(.sidebar)
-        .font(Theme.body)
+        .buttonStyle(.plain)
+        .onHover { h in withAnimation(Theme.Motion.hover) { hovering = h } }
+        .modifier(OptionalDrop(onDrop: onDrop, targeted: $targeted))
+        .accessibilityAddTraits(selected ? .isSelected : [])
     }
+}
 
-    private func row(_ section: SidebarSection, _ title: String, _ symbol: String, _ count: Int) -> some View {
-        Label(title, systemImage: symbol)
-            .badge(count)
-            .tag(section)
+private struct OptionalDrop: ViewModifier {
+    let onDrop: ((TaskRef) -> Void)?
+    @Binding var targeted: Bool
+
+    func body(content: Content) -> some View {
+        if let onDrop {
+            content.dropDestination(for: TaskRef.self) { items, _ in
+                guard let ref = items.first else { return false }
+                onDrop(ref)
+                return true
+            } isTargeted: { on in withAnimation(Theme.Motion.hover) { targeted = on } }
+        } else {
+            content
+        }
     }
 }

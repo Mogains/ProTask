@@ -25,7 +25,7 @@ enum EventPlanner {
     static let defaultMinutes = 30
     static let doneMark = "✓ "
 
-    /// What the "Top 3" calendar should show for a task, or nil for no event.
+    /// What the "ProTask" calendar should show for a task, or nil for no event.
     /// - Due date and time: timed event lasting the estimate (30 min default).
     /// - Due date only: all-day event on that date.
     /// - Today's Top 3 pick without a due date: all-day event today.
@@ -37,7 +37,7 @@ enum EventPlanner {
         var meta = ["Priority: \(t.priority.title)"]
         if let est = t.estimateMinutes { meta.append("Estimate: \(est) min") }
         if pinnedToday, let slot = t.topSlot { meta.append("Today's Top 3, #\(slot)") }
-        let notes = [t.notes.isEmpty ? nil : t.notes, meta.joined(separator: " · "), "Added by Top 3"]
+        let notes = [t.notes.isEmpty ? nil : t.notes, meta.joined(separator: " · "), "Added by ProTask"]
             .compactMap { $0 }
             .joined(separator: "\n\n")
         let title = (t.isCompleted ? doneMark : "") + t.title

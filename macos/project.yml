@@ -22,8 +22,9 @@ targets:
       - path: Top3
     settings:
       base:
-        PRODUCT_NAME: "Top 3"
+        PRODUCT_NAME: "ProTask"
         PRODUCT_MODULE_NAME: Top3
+        # Unchanged from the "Top 3" days so notification and calendar permissions carry over.
         PRODUCT_BUNDLE_IDENTIFIER: com.anmolbhatt.top3
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
@@ -32,18 +33,18 @@ targets:
     info:
       path: Top3/Info.plist
       properties:
-        CFBundleDisplayName: Top 3
-        CFBundleName: Top 3
+        CFBundleDisplayName: ProTask
+        CFBundleName: ProTask
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         LSApplicationCategoryType: public.app-category.productivity
         LSMinimumSystemVersion: $(MACOSX_DEPLOYMENT_TARGET)
         NSHumanReadableCopyright: ""
-        NSCalendarsFullAccessUsageDescription: Top 3 adds tasks with due dates and your daily Top 3 to a "Top 3" calendar, and shows today's events so you can see your free time.
-        NSCalendarsUsageDescription: Top 3 adds tasks with due dates and your daily Top 3 to a "Top 3" calendar, and shows today's events so you can see your free time.
+        NSCalendarsFullAccessUsageDescription: ProTask adds tasks with due dates and your daily Top 3 to a "ProTask" calendar, and shows today's events so you can see your free time.
+        NSCalendarsUsageDescription: ProTask adds tasks with due dates and your daily Top 3 to a "ProTask" calendar, and shows today's events so you can see your free time.
         UTExportedTypeDeclarations:
           - UTTypeIdentifier: com.anmolbhatt.top3.task
-            UTTypeDescription: Top 3 Task
+            UTTypeDescription: ProTask Task
             UTTypeConformsTo: [public.data]
             UTTypeTagSpecification: {}
   Top3Tests:

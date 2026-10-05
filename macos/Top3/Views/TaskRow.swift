@@ -1,10 +1,13 @@
 import SwiftUI
 
+/// One task on a single 32pt line. Hover reveals a drag handle, the Top 3 star and an actions menu.
 struct TaskRow: View {
     @Environment(AppModel.self) private var model
     let task: TaskItem
     /// In a Top 3 slot the row stays put after checking.
     var inTopSlot = false
+    var showDivider = true
+    var showHandle = true
 
     @State private var checking = false
     @State private var hovering = false
@@ -13,55 +16,55 @@ struct TaskRow: View {
         let selected = model.selectedTaskID == task.id
         let checked = task.isCompleted || checking
 
-        HStack(alignment: .top, spacing: 8) {
+        HStack(spacing: Theme.Space.s) {
+            if showHandle {
+                Image(systemName: "line.3.horizontal")
+                    .font(.system(size: Theme.Size.dragHandle))
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                    .frame(width: Theme.Size.dragHandle)
+                    .opacity(hovering && !task.isCompleted ? 1 : 0)
+                    .help("Drag to move")
+            }
+
             if task.isIdea {
                 Image(systemName: "lightbulb")
-                    .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 16, height: 16)
-                    .padding(.top, 1)
+                    .font(.system(size: Theme.Size.icon))
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                    .frame(width: Theme.Size.checkbox)
             } else {
-            Button(action: toggle) {
-                Image(systemName: checked ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 14, weight: .regular))
-                    .foregroundStyle(checked ? Color.accentColor : Color.secondary)
-                    .contentTransition(.symbolEffect(.replace))
-                    .symbolEffect(.bounce, value: checked)
-                    .frame(width: 16, height: 16)
-            }
-            .buttonStyle(.plain)
-            .padding(.top, 1)
-            .help(checked ? "Mark as not done" : "Mark as done")
+                Button(action: toggle) { Checkbox(checked: checked) }
+                    .buttonStyle(.plain)
+                    .help(checked ? "Mark as not done" : "Mark as done")
             }
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text(task.title)
-                    .font(Theme.body)
-                    .strikethrough(checked, color: .secondary)
-                    .foregroundStyle(checked ? .secondary : .primary)
-                    .lineLimit(2)
-                TaskMeta(task: task)
+            Text(task.title)
+                .font(Theme.Fonts.body)
+                .foregroundStyle(checked ? Theme.Palette.textTertiary : Theme.Palette.text)
+                .strikethrough(checked, color: Theme.Palette.textTertiary)
+                .lineLimit(1)
+                .truncationMode(.tail)
+
+            if !task.notes.isEmpty {
+                Image(systemName: "text.alignleft")
+                    .font(.system(size: Theme.Size.dragHandle))
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                    .help(task.notes)
             }
 
-            Spacer(minLength: 4)
+            Spacer(minLength: Theme.Space.s)
 
-            if !task.isCompleted && !task.isIdea && (hovering || selected || task.topSlot != nil) {
-                Button { model.togglePin(task) } label: {
-                    Image(systemName: task.topSlot != nil ? "star.fill" : "star")
-                        .font(.system(size: 11))
-                        .foregroundStyle(task.topSlot != nil ? Color.accentColor : Color.secondary)
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 2)
-                .help(task.topSlot != nil ? "Remove from Top 3" : "Add to Top 3")
-            }
+            RowMeta(task: task)
+
+            trailing(selected: selected)
         }
-        .padding(.vertical, 5)
-        .padding(.horizontal, 8)
-        .background(RoundedRectangle(cornerRadius: 5).fill(selected ? Theme.rowSelected : hovering ? Theme.rowHover : .clear))
+        .padding(.horizontal, Theme.Space.s)
+        .frame(height: Theme.Size.row)
+        .rowFill(hovering: hovering, selected: selected)
+        .overlay(alignment: .bottom) {
+            if showDivider { Hairline().padding(.leading, Theme.Space.s) }
+        }
         .contentShape(Rectangle())
-        .opacity(checking && !inTopSlot ? 0.45 : 1)
-        .onHover { hovering = $0 }
+        .onHover { h in withAnimation(Theme.Motion.hover) { hovering = h } }
         .onTapGesture(count: 2) { model.edit(task) }
         .simultaneousGesture(TapGesture().onEnded { model.selectedTaskID = task.id })
         .contextMenu { TaskMenu(task: task) }
@@ -69,61 +72,81 @@ struct TaskRow: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
     }
 
+    @ViewBuilder
+    private func trailing(selected: Bool) -> some View {
+        let reveal = hovering || selected
+        if task.isIdea {
+            HStack(spacing: 0) {
+                IconButton(symbol: "checklist", help: "Send to Have to do") { withAnimation(Theme.Motion.list) { model.send(task, to: .haveTo) } }
+                IconButton(symbol: "tray", help: "Send to Nice to do") { withAnimation(Theme.Motion.list) { model.send(task, to: .niceTo) } }
+                IconButton(symbol: "clock.arrow.circlepath", help: "Keep in Parking Lot, remind again in an hour") { model.snooze(task) }
+                IconButton(symbol: "trash", help: "Delete") { withAnimation(Theme.Motion.list) { model.delete(task) } }
+            }
+            .opacity(reveal ? 1 : 0)
+        } else {
+            HStack(spacing: 0) {
+                if !task.isCompleted {
+                    IconButton(symbol: task.topSlot != nil ? "star.fill" : "star",
+                               help: task.topSlot != nil ? "Remove from Top 3" : "Add to Top 3",
+                               active: task.topSlot != nil) {
+                        withAnimation(Theme.Motion.list) { model.togglePin(task) }
+                    }
+                    .opacity(reveal || task.topSlot != nil ? 1 : 0)
+                }
+                ActionsMenu(help: "More actions") { TaskMenu(task: task) }
+                    .opacity(reveal ? 1 : 0)
+            }
+        }
+    }
+
     private func toggle() {
         model.selectedTaskID = task.id
         if task.isCompleted {
-            withAnimation(.snappy) { model.setCompleted(task, false) }
+            withAnimation(Theme.Motion.list) { model.setCompleted(task, false) }
             return
         }
         guard !checking else { return }
-        withAnimation(.snappy(duration: 0.2)) { checking = true }
-        // Let the check land before the row slides away to Done.
-        DispatchQueue.main.asyncAfter(deadline: .now() + (inTopSlot ? 0.15 : 0.45)) {
-            withAnimation(.easeOut(duration: 0.25)) { model.setCompleted(task, true) }
+        checking = true
+        // Let the check draw, then the row leaves for Done.
+        DispatchQueue.main.asyncAfter(deadline: .now() + (inTopSlot ? 0 : Theme.Motion.checkDelay)) {
+            withAnimation(Theme.Motion.list) { model.setCompleted(task, true) }
             checking = false
         }
     }
 }
 
-struct TaskMeta: View {
+/// Due date, priority and estimate as small muted text.
+struct RowMeta: View {
     @Environment(AppModel.self) private var model
     let task: TaskItem
 
     var body: some View {
-        let due = Fmt.due(task, today: model.today)
-        let est = Fmt.minutes(task.estimateMinutes)
-        let showPriority = task.priority != .medium
-        if task.isIdea || task.isCompleted || due != nil || est != nil || showPriority || !task.notes.isEmpty {
-            HStack(spacing: 9) {
-                if task.isCompleted, let at = task.completedAt {
-                    item("checkmark", "Done \(Fmt.time(at))")
-                } else if task.isIdea {
-                    item("clock", "Added \(Fmt.time(task.createdAt))")
-                    if let r = task.remindAt {
-                        item(r > Date() ? "bell" : "bell.slash", r > Date() ? "Reminder \(Fmt.time(r))" : "Reminder sent")
-                    }
+        HStack(spacing: Theme.Space.m) {
+            if task.isCompleted, let at = task.completedAt {
+                Text("Done \(Fmt.time(at))")
+            } else if task.isIdea {
+                Text("Added \(Fmt.time(task.createdAt))")
+                if let r = task.remindAt {
+                    Text(r > Date() ? "Reminds \(Fmt.time(r))" : "Reminder sent")
                 }
-                if !task.isIdea {
-                    if showPriority { item(task.priority == .high ? "arrow.up" : "arrow.down", task.priority.title) }
-                    if let due {
-                        item(due.overdue && !task.isCompleted ? "exclamationmark.circle" : "calendar", due.text)
-                            .foregroundStyle(due.overdue && !task.isCompleted ? Color.primary : Color.secondary)
-                    }
-                    if let est { item("timer", est) }
+            } else {
+                if task.priority != .medium {
+                    Text(task.priority.title)
+                        .foregroundStyle(task.priority == .high ? Theme.Palette.textSecondary : Theme.Palette.textTertiary)
                 }
-                if !task.notes.isEmpty { Image(systemName: "text.alignleft").help(task.notes) }
+                if let due = Fmt.due(task, today: model.today) {
+                    Text(due.text)
+                        .foregroundStyle(due.overdue ? Theme.Palette.text : Theme.Palette.textSecondary)
+                }
+                if let est = Fmt.minutes(task.estimateMinutes) {
+                    Text(est).foregroundStyle(Theme.Palette.textTertiary)
+                }
             }
-            .font(Theme.secondary)
-            .foregroundStyle(.secondary)
-            .imageScale(.small)
         }
-    }
-
-    private func item(_ symbol: String, _ text: String) -> some View {
-        HStack(spacing: 3) {
-            Image(systemName: symbol)
-            Text(text)
-        }
+        .font(Theme.Fonts.secondary)
+        .foregroundStyle(Theme.Palette.textTertiary)
+        .lineLimit(1)
+        .fixedSize()
     }
 }
 
@@ -136,7 +159,7 @@ struct TaskMenu: View {
         if task.isIdea {
             Button("Send to Have to do") { model.send(task, to: .haveTo) }
             Button("Send to Nice to do") { model.send(task, to: .niceTo) }
-            Button("Keep in Parking Lot (remind in 1 hour)") { model.snooze(task) }
+            Button("Keep in Parking Lot") { model.snooze(task) }
         } else {
             Button(task.isCompleted ? "Mark as Not Done" : "Mark as Done") { model.setCompleted(task, !task.isCompleted) }
             if !task.isCompleted {

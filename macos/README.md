@@ -1,42 +1,43 @@
-# Top 3 for Mac
+# ProTask
 
-A native macOS goals and to-do app built around one idea: every day, pick the **three** things that matter and get them done.
+A native macOS goals and to-do app built around one idea: every day, pick your **Top 3**, the three things that matter, and get them done.
 
 - **Today**: three Top 3 slots above your two lists, a streak counter and today's completion.
 - **Have to do / Nice to do**: drag to reorder or move between lists. Auto sort orders by due date, then priority, then shortest first. Dragging switches a list to manual until you click **Auto** again.
 - **Parking Lot**: type an idea, press Return. An hour later you get a notification asking where it goes.
-- **Calendar**: tasks with due dates and today's Top 3 go to a "Top 3" calendar through Calendar.app, so they work with iCloud, Google, Outlook or any account you've added there. A side panel shows today's events and free time.
+- **Calendar**: tasks with due dates and today's Top 3 go to a "ProTask" calendar through Calendar.app, so they work with iCloud, Google, Outlook or any account you've added there. A side panel shows today's events and free time.
 - SwiftUI, SwiftData, EventKit and UserNotifications. macOS 14 or later. No account, no server.
+- A custom design system (`Top3/Views/Theme.swift`): flat window, Inter type, greys with one muted accent, following the system light/dark setting.
 
 ## Install from the .dmg
 
-1. Open `dist/Top3.dmg` (build it first, see below).
-2. Drag **Top 3** onto the **Applications** shortcut.
-3. Eject the disk image and open Top 3 from Applications.
+1. Open `dist/ProTask.dmg` (build it first, see below).
+2. Drag **ProTask** onto the **Applications** shortcut.
+3. Eject the disk image and open ProTask from Applications.
 
 ### If macOS blocks it
 
 The app is not signed with an Apple Developer ID, so the first launch is blocked.
 
-- **macOS 15 (Sequoia) and later:** open Top 3 once and click **Done** on the warning. Then go to **System Settings → Privacy & Security**, scroll to the message about "Top 3", click **Open Anyway**, and confirm with your password. Open the app again and click **Open**.
-- **macOS 14 (Sonoma):** right-click Top 3 in Applications, choose **Open**, then click **Open** in the dialog.
+- **macOS 15 (Sequoia) and later:** open ProTask once and click **Done** on the warning. Then go to **System Settings → Privacy & Security**, scroll to the message about "ProTask", click **Open Anyway**, and confirm with your password. Open the app again and click **Open**.
+- **macOS 14 (Sonoma):** right-click ProTask in Applications, choose **Open**, then click **Open** in the dialog.
 
 If macOS says the app "is damaged and can't be opened", the download quarantine flag is the cause. Clear it with:
 
 ```bash
-xattr -dr com.apple.quarantine "/Applications/Top 3.app"
+xattr -dr com.apple.quarantine "/Applications/ProTask.app"
 ```
 
 You only need to do this once per version.
 
 ### Permissions on first launch
 
-Top 3 asks for two permissions:
+ProTask asks for two permissions:
 
-- **Notifications**: needed for the one-hour Parking Lot reminders. Change it in **System Settings → Notifications → Top 3**.
-- **Calendars (full access)**: needed to create the "Top 3" calendar and to read today's events. Change it in **System Settings → Privacy & Security → Calendars**.
+- **Notifications**: needed for the one-hour Parking Lot reminders. Change it in **System Settings → Notifications → ProTask**.
+- **Calendars (full access)**: needed to create the "ProTask" calendar and to read today's events. Change it in **System Settings → Privacy & Security → Calendars**.
 
-Both can also be checked from **Top 3 → Settings** (Command-comma).
+Both can also be checked from **ProTask → Settings** (Command-comma).
 
 ## Build from source
 
@@ -52,12 +53,12 @@ Then, from this `macos/` folder:
 ```bash
 # Debug build
 xcodebuild -project Top3.xcodeproj -scheme Top3 -derivedDataPath build build
-open "build/Build/Products/Debug/Top 3.app"
+open "build/Build/Products/Debug/ProTask.app"
 
 # Unit tests (sorting, Top 3 limit, day rollover and streak, free time, calendar mapping)
 xcodebuild -project Top3.xcodeproj -scheme Top3 -derivedDataPath build test
 
-# Release build packaged as dist/Top3.dmg
+# Release build packaged as dist/ProTask.dmg
 ./scripts/package.sh
 ```
 
@@ -90,7 +91,7 @@ Click a task to select it. Double-click to edit. Right-click for every action.
 - Finishing all three plays a short animation and a sound. The streak counts consecutive days with all three done.
 
 **Parking Lot**
-- Each idea is timestamped and schedules its own notification for one hour later. macOS delivers it even if Top 3 is closed.
+- Each idea is timestamped and schedules its own notification for one hour later. macOS delivers it even if ProTask is closed.
 - The notification's options are **Send to Have to do**, **Send to Nice to do**, **Keep in Parking Lot** (reminds again in an hour) and **Delete**. The same actions are on each idea's row and context menu. You can also drag an idea onto a list in the sidebar or on the Today screen.
 - The menu bar icon (a checklist) lets you park an idea without opening the window. Turn it off in Settings.
 
@@ -99,12 +100,15 @@ Click a task to select it. Double-click to edit. Right-click for every action.
 - Due date only: an all-day event.
 - Today's Top 3 pick without a due date: an all-day event today.
 - Completing a task adds a "✓" to the event title. Deleting a task removes its event. Edits made in Calendar.app are not read back.
-- The "Top 3" calendar is created in your default calendar account. Some accounts, including Google, don't let apps create calendars. In that case Top 3 falls back to iCloud or "On My Mac". You can also create a calendar named "Top 3" yourself in Calendar.app, and the app will use it.
-- The side panel lists today's events from every calendar except "Top 3", plus free blocks between 8 AM and 8 PM.
+- The "ProTask" calendar is created in your default calendar account. Some accounts, including Google, don't let apps create calendars. In that case ProTask falls back to iCloud or "On My Mac". You can also create a calendar named "ProTask" yourself in Calendar.app, and the app will use it.
+- If you used the app when it was called Top 3, its "Top 3" calendar is renamed to "ProTask" in place, so existing events carry over.
+- The side panel lists today's events from every calendar except "ProTask", plus free blocks between 8 AM and 8 PM.
 
 ## Data
 
-Tasks are stored with SwiftData in `~/Library/Application Support/Top 3/Top3.store`. Delete that folder to start over.
+Tasks are stored with SwiftData in `~/Library/Application Support/ProTask/Top3.store`. Data from the old `Top 3` folder is moved there automatically. Delete that folder to start over.
+
+The bundle identifier (`com.anmolbhatt.top3`) is unchanged from the app's earlier name so existing permissions carry over. The bundled Inter font is licensed under the SIL Open Font License (`Top3/Resources/Fonts/Inter-LICENSE.txt`).
 
 ## Project layout
 
@@ -116,8 +120,8 @@ macos/
     Model/Models.swift        SwiftData models
     Logic/                    pure logic, also compiled into the tests
     Services/                 AppModel (all changes), EventKit and notification services
-    Views/                    SwiftUI views
-    Resources/Assets.xcassets icon and the muted accent color
+    Views/                    SwiftUI views; Theme.swift holds every design token, Components.swift the custom controls
+    Resources/                icon, accent color, Inter font
   Top3Tests/                  XCTest unit tests
   scripts/                    package.sh (.dmg), make-icon.swift
 ```

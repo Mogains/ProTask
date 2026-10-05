@@ -1,5 +1,5 @@
 #!/bin/bash
-# Builds a Release "Top 3.app" and packages it as dist/Top3.dmg (drag-to-Applications layout).
+# Builds a Release "ProTask.app" and packages it as dist/ProTask.dmg (drag-to-Applications layout).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -10,7 +10,7 @@ echo "Building Release…"
 xcodebuild -project Top3.xcodeproj -scheme Top3 -configuration Release -derivedDataPath build -destination 'generic/platform=macOS' \
   CODE_SIGN_IDENTITY=- build -quiet
 
-APP="build/Build/Products/Release/Top 3.app"
+APP="build/Build/Products/Release/ProTask.app"
 [ -d "$APP" ] || { echo "Build output not found at $APP"; exit 1; }
 codesign --verify --deep "$APP"
 
@@ -20,6 +20,6 @@ cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
 
 mkdir -p dist
-rm -f dist/Top3.dmg
-hdiutil create -volname "Top 3" -srcfolder "$STAGE" -ov -format UDZO dist/Top3.dmg >/dev/null
-echo "Created $(pwd)/dist/Top3.dmg"
+rm -f dist/ProTask.dmg dist/Top3.dmg
+hdiutil create -volname "ProTask" -srcfolder "$STAGE" -ov -format UDZO dist/ProTask.dmg >/dev/null
+echo "Created $(pwd)/dist/ProTask.dmg"

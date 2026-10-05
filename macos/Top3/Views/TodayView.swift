@@ -4,7 +4,6 @@ import SwiftUI
 struct TodayView: View {
     @Environment(AppModel.self) private var model
     let tasks: [TaskItem]
-    @Query(filter: #Predicate<DayLog> { $0.top3Complete }) private var completeDays: [DayLog]
     @Query private var logs: [DayLog]
 
     var body: some View {
@@ -15,93 +14,99 @@ struct TodayView: View {
         let showPrompt = pins.isEmpty && !promptDismissed && !(haveTo.isEmpty && niceTo.isEmpty)
 
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                header
+            VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 if showPrompt { prompt }
-                Top3Slots(pins: pins)
+                Top3Block(pins: pins)
                 ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .top, spacing: 20) {
-                        TaskColumn(list: .haveTo, tasks: haveTo).frame(minWidth: 260)
-                        TaskColumn(list: .niceTo, tasks: niceTo).frame(minWidth: 260)
+                    HStack(alignment: .top, spacing: Theme.Space.xl) {
+                        TaskColumn(list: .haveTo, tasks: haveTo)
+                        TaskColumn(list: .niceTo, tasks: niceTo)
                     }
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: Theme.Space.xl) {
                         TaskColumn(list: .haveTo, tasks: haveTo)
                         TaskColumn(list: .niceTo, tasks: niceTo)
                     }
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, Theme.Space.xl)
+            .padding(.vertical, Theme.Space.l)
         }
-    }
-
-    private var header: some View {
-        let stats = DailyStats.completion(tasks.map(\.statInfo), today: model.today, resetHour: model.resetHour)
-        let streak = DayKey.streak(completeDays: Set(completeDays.map(\.day)), today: model.today)
-        let date = DayKey.date(from: model.today) ?? Date()
-        return HStack(alignment: .firstTextBaseline) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Today").font(Theme.title)
-                Text(date.formatted(.dateTime.weekday(.wide).month(.wide).day()))
-                    .font(Theme.secondary).foregroundStyle(.secondary)
-            }
-            Spacer()
-            HStack(spacing: 16) {
-                HStack(spacing: 4) {
-                    Image(systemName: "flame")
-                    Text("\(streak)-day streak").contentTransition(.numericText())
-                }
-                .help("Days in a row with all of your Top 3 done")
-                HStack(spacing: 6) {
-                    ProgressView(value: stats.fraction)
-                        .progressViewStyle(.linear)
-                        .frame(width: 70)
-                        .tint(.accentColor)
-                    Text(stats.total == 0 ? "No tasks due" : "\(Int((stats.fraction * 100).rounded()))% today")
-                        .monospacedDigit()
-                        .contentTransition(.numericText())
-                }
-                .help("\(stats.done) of \(stats.total) done today")
-            }
-            .font(Theme.secondary)
-            .foregroundStyle(.secondary)
-        }
+        .scrollIndicators(.automatic)
     }
 
     private var prompt: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "sunrise").foregroundStyle(.secondary)
-            VStack(alignment: .leading, spacing: 1) {
-                Text("New day. Pick your Top 3.").font(Theme.bodyMedium)
-                Text("Drag tasks into the slots, click a star, or select a task and press Command-1, 2 or 3. Yesterday's unfinished picks are back in their lists.")
-                    .font(Theme.secondary).foregroundStyle(.secondary)
-            }
+        HStack(spacing: Theme.Space.s) {
+            Text("New day. Pick your Top 3: drag tasks into the slots, click a star, or select one and press ⌘1, ⌘2 or ⌘3.")
+                .font(Theme.Fonts.small)
+                .foregroundStyle(Theme.Palette.textSecondary)
             Spacer()
-            Button("Dismiss") { model.dismissPrompt() }.controlSize(.small)
+            Button("Dismiss") { withAnimation(Theme.Motion.standard) { model.dismissPrompt() } }
+                .buttonStyle(.ghost)
         }
-        .padding(10)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.rowHover))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.hairline))
     }
 }
 
-struct Top3Slots: View {
+/// Header accessory for Today: streak and completion as one muted line.
+struct TodayStats: View {
+    @Environment(AppModel.self) private var model
+    let tasks: [TaskItem]
+    @Query(filter: #Predicate<DayLog> { $0.top3Complete }) private var completeDays: [DayLog]
+
+    var body: some View {
+        let stats = DailyStats.completion(tasks.map(\.statInfo), today: model.today, resetHour: model.resetHour)
+        let streak = DayKey.streak(completeDays: Set(completeDays.map(\.day)), today: model.today)
+        HStack(spacing: Theme.Space.m) {
+            Text(streak == 1 ? "1-day streak" : "\(streak)-day streak")
+                .help("Days in a row with all of your Top 3 done")
+            if stats.total > 0 {
+                Text("\(Int((stats.fraction * 100).rounded()))% today")
+                    .help("\(stats.done) of \(stats.total) done today")
+            }
+        }
+        .font(Theme.Fonts.secondary)
+        .foregroundStyle(Theme.Palette.textTertiary)
+        .monospacedDigit()
+    }
+}
+
+struct Top3Block: View {
     @Environment(AppModel.self) private var model
     let pins: [Int: TaskItem]
 
     var body: some View {
         let done = pins.values.filter(\.isCompleted).count
-        VStack(alignment: .leading, spacing: 4) {
-            SectionHeader(title: "Top 3", detail: pins.isEmpty ? nil : "\(done) of \(pins.count) done")
-                .padding(.horizontal, 8)
+        let allDone = pins.count == 3 && done == 3
+        VStack(alignment: .leading, spacing: Theme.Space.s) {
+            HStack(spacing: Theme.Space.s) {
+                SectionLabel(title: "Top 3")
+                HStack(spacing: Theme.Space.xxs) {
+                    ForEach(Top3Planner.slots, id: \.self) { n in
+                        Capsule()
+                            .fill(n <= done ? Theme.Palette.accent : Theme.Palette.border)
+                            .frame(width: Theme.Size.progressSegment, height: Theme.Size.indicator)
+                    }
+                }
+                Text("\(done)/3")
+                    .font(Theme.Fonts.caption)
+                    .foregroundStyle(allDone ? Theme.Palette.accent : Theme.Palette.textTertiary)
+                    .monospacedDigit()
+                if allDone {
+                    Text("All done").font(Theme.Fonts.caption).foregroundStyle(Theme.Palette.accent)
+                }
+            }
+            .padding(.leading, Theme.Space.s)
+            .animation(Theme.Motion.standard, value: done)
+
             VStack(spacing: 0) {
                 ForEach(Top3Planner.slots, id: \.self) { n in
                     Top3Slot(number: n, task: pins[n])
-                    if n < 3 { Divider().opacity(0.6) }
+                    if n < Top3Planner.slots.count { Hairline() }
                 }
             }
-            .background(RoundedRectangle(cornerRadius: 8).fill(Theme.rowHover.opacity(0.6)))
-            .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.hairline))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.m))
+            .overlay(RoundedRectangle(cornerRadius: Theme.Radius.m)
+                .strokeBorder(model.celebrating ? Theme.Palette.accent : Theme.Palette.border, lineWidth: Theme.Size.hairline))
+            .animation(Theme.Motion.standard, value: model.celebrating)
         }
     }
 }
@@ -113,34 +118,32 @@ struct Top3Slot: View {
     @State private var targeted = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: 6) {
+        HStack(spacing: 0) {
             Text("\(number)")
-                .font(.system(size: 10, weight: .semibold).monospacedDigit())
-                .foregroundStyle(.secondary)
-                .frame(width: 16, height: 16)
-                .background(Circle().strokeBorder(Theme.hairline))
-                .padding(.top, 5)
+                .font(Theme.Fonts.mono)
+                .foregroundStyle(Theme.Palette.textTertiary)
+                .frame(width: Theme.Size.slotNumber)
+                .padding(.leading, Theme.Space.m)
             if let task {
-                TaskRow(task: task, inTopSlot: true)
+                TaskRow(task: task, inTopSlot: true, showDivider: false, showHandle: false)
                     .draggable(TaskRef(id: task.id)) { DragPreview(title: task.title) }
             } else {
-                Text("Drag a task here, or select one and press Command-\(number)")
-                    .font(Theme.secondary)
-                    .foregroundStyle(.tertiary)
-                    .padding(.vertical, 7)
-                    .padding(.horizontal, 8)
+                Text("Empty. Drop a task here or press ⌘\(number).")
+                    .font(Theme.Fonts.small)
+                    .foregroundStyle(Theme.Palette.textTertiary)
+                    .padding(.leading, Theme.Space.s)
                 Spacer()
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .frame(minHeight: 36)
-        .background(RoundedRectangle(cornerRadius: 6).strokeBorder(Color.accentColor, lineWidth: 1).opacity(targeted ? 1 : 0))
+        .frame(height: Theme.Size.row + Theme.Space.xs)
+        .background(targeted ? Theme.Palette.selected : .clear)
         .contentShape(Rectangle())
         .dropDestination(for: TaskRef.self) { items, _ in
             guard let ref = items.first else { return false }
-            withAnimation(.snappy) { model.pin(ref.id, slot: number) }
+            withAnimation(Theme.Motion.list) { model.pin(ref.id, slot: number) }
             return true
-        } isTargeted: { targeted = $0 }
+        } isTargeted: { on in
+            withAnimation(Theme.Motion.hover) { targeted = on }
+        }
     }
 }

@@ -5,30 +5,32 @@ struct DoneView: View {
     let tasks: [TaskItem]
 
     var body: some View {
-        let done = tasks.filter { $0.isCompleted && $0.topSlot == nil }
-            .sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
+        let done = DoneView.completed(in: tasks)
         let groups = Dictionary(grouping: done) { DayKey.key(for: $0.completedAt ?? Date(), resetHour: model.resetHour) }
         let days = groups.keys.sorted(by: >)
 
-        if done.isEmpty {
-            ContentUnavailableView("Nothing done yet", systemImage: "checkmark.circle",
-                                   description: Text("Completed tasks collect here."))
-        } else {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Done").font(Theme.title)
-                    ForEach(days, id: \.self) { day in
-                        VStack(alignment: .leading, spacing: 1) {
-                            SectionHeader(title: label(day), detail: "\(groups[day]?.count ?? 0)").padding(.horizontal, 8).padding(.bottom, 3)
-                            ForEach(groups[day] ?? []) { TaskRow(task: $0) }
-                        }
+        ScrollView {
+            VStack(alignment: .leading, spacing: Theme.Space.l) {
+                if done.isEmpty { EmptyLine(text: "Nothing completed yet.").padding(.leading, Theme.Space.s) }
+                ForEach(days, id: \.self) { day in
+                    let items = groups[day] ?? []
+                    VStack(alignment: .leading, spacing: 0) {
+                        SectionLabel(title: label(day), detail: "\(items.count)")
+                            .padding(.leading, Theme.Space.s)
+                            .frame(height: Theme.Size.row)
+                        ForEach(items) { TaskRow(task: $0, showDivider: $0.id != items.last?.id, showHandle: false) }
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .frame(maxWidth: 720, alignment: .leading)
             }
+            .padding(.horizontal, Theme.Space.xl)
+            .padding(.vertical, Theme.Space.l)
+            .frame(maxWidth: Theme.Size.contentMaxWidth, alignment: .leading)
         }
+    }
+
+    static func completed(in tasks: [TaskItem]) -> [TaskItem] {
+        tasks.filter { $0.isCompleted && $0.topSlot == nil }
+            .sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
     }
 
     private func label(_ day: String) -> String {

@@ -1,6 +1,6 @@
 # Top 3
 
-> **Looking for the Mac app?** The native macOS version lives in [`macos/`](macos/README.md). This top-level folder is the earlier Next.js web version.
+> **Looking for the Mac app?** ProTask, the native macOS version, lives in [`macos/`](macos/README.md). This top-level folder is the earlier Next.js web version.
 
 A minimal goals and to-do app built around one idea: every day, pick the **three** things that matter and get them done.
 

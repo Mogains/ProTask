@@ -2,11 +2,13 @@ import AppKit
 import EventKit
 import Observation
 
-/// One-way sync of tasks to a dedicated "Top 3" calendar, plus today's events for the side panel.
+/// One-way sync of tasks to a dedicated "ProTask" calendar, plus today's events for the side panel.
 @MainActor
 @Observable
 final class CalendarService {
-    static let calendarTitle = "Top 3"
+    static let calendarTitle = "ProTask"
+    /// The calendar's name before the app was renamed. Found and renamed in place, so its events carry over.
+    static let legacyCalendarTitle = "Top 3"
     private static let calendarIDKey = "top3CalendarIdentifier"
 
     struct DayEvent: Identifiable, Equatable {
@@ -45,18 +47,20 @@ final class CalendarService {
         }
     }
 
-    // MARK: Top 3 calendar
+    // MARK: ProTask calendar
 
-    /// Finds the saved "Top 3" calendar, or one with that title, or creates it.
+    /// Finds the saved "ProTask" calendar, or one with that (or the old "Top 3") title, or creates it.
     func top3Calendar() -> EKCalendar? {
         guard hasAccess else { return nil }
         let defaults = UserDefaults.standard
         if let id = defaults.string(forKey: Self.calendarIDKey), let cal = store.calendar(withIdentifier: id) {
-            return cal
+            return migrated(cal)
         }
-        if let cal = store.calendars(for: .event).first(where: { $0.title == Self.calendarTitle && $0.allowsContentModifications }) {
+        let writable = store.calendars(for: .event).filter(\.allowsContentModifications)
+        if let cal = writable.first(where: { $0.title == Self.calendarTitle })
+            ?? writable.first(where: { $0.title == Self.legacyCalendarTitle }) {
             defaults.set(cal.calendarIdentifier, forKey: Self.calendarIDKey)
-            return cal
+            return migrated(cal)
         }
         // Not every account can host new calendars (Google can't via EventKit), so try a few sources.
         var candidates: [EKSource] = []
@@ -79,8 +83,16 @@ final class CalendarService {
                 continue
             }
         }
-        lastError = "Couldn't create a \"Top 3\" calendar. Create one in Calendar.app and it will be used."
+        lastError = "Couldn't create a \"ProTask\" calendar. Create one in Calendar.app and it will be used."
         return nil
+    }
+
+    /// Renames the pre-rename "Top 3" calendar to "ProTask". Its events stay in it, so nothing is lost.
+    private func migrated(_ cal: EKCalendar) -> EKCalendar {
+        guard cal.title == Self.legacyCalendarTitle else { return cal }
+        cal.title = Self.calendarTitle
+        do { try store.saveCalendar(cal, commit: true) } catch { lastError = "Couldn't rename the calendar: \(error.localizedDescription)" }
+        return cal
     }
 
     // MARK: Sync

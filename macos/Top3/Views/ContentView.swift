@@ -1,60 +1,82 @@
 import SwiftData
 import SwiftUI
 
+/// The main window: custom sidebar, a content area with its own header, and an optional calendar panel.
 struct ContentView: View {
     @Environment(AppModel.self) private var model
-    @Query(animation: .snappy) private var tasks: [TaskItem]
+    @Query(animation: Theme.Motion.list) private var tasks: [TaskItem]
     @AppStorage("showCalendarPanel") private var showPanel = true
 
     var body: some View {
         @Bindable var model = model
-        NavigationSplitView {
+        HStack(spacing: 0) {
             SidebarView(tasks: tasks)
-                .navigationSplitViewColumnWidth(min: 170, ideal: 200, max: 260)
-        } detail: {
-            detail
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(Theme.content)
-                .inspector(isPresented: $showPanel) {
-                    CalendarPanel().inspectorColumnWidth(min: 210, ideal: 240, max: 320)
-                }
-                .toolbar {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        Button { model.newTask() } label: { Label("New Task", systemImage: "plus") }
-                            .help("New task (Command-N)")
-                        Button { model.showQuickPark = true } label: { Label("Park an Idea", systemImage: "lightbulb") }
-                            .help("Quick add to Parking Lot (Shift-Command-P)")
-                        Button { showPanel.toggle() } label: { Label("Today's Calendar", systemImage: "sidebar.right") }
-                            .help(showPanel ? "Hide today's calendar" : "Show today's calendar")
-                    }
-                }
+                .frame(width: Theme.Size.sidebarWidth)
+                .frame(maxHeight: .infinity)
+                .background(Theme.Palette.surface)
+            Hairline(vertical: true)
+
+            VStack(spacing: 0) {
+                header
+                Hairline()
+                detail.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+            .background(Theme.Palette.background)
+
+            if showPanel {
+                Hairline(vertical: true)
+                CalendarPanel()
+                    .frame(width: Theme.Size.panelWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(Theme.Palette.surface)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
         }
-        .navigationTitle(title)
-        .sheet(item: $model.editor) { TaskEditor(request: $0) }
-        .sheet(isPresented: $model.showQuickPark) { QuickParkSheet() }
+        .ignoresSafeArea()
+        .background(WindowConfigurator())
+        .background(Theme.Palette.background)
+        .font(Theme.Fonts.body)
+        .foregroundStyle(Theme.Palette.text)
+        .tint(Theme.Palette.accent)
+        .sheet(item: $model.editor) { request in
+            TaskEditor(request: request).presentationBackground(Theme.Palette.surface)
+        }
+        .sheet(isPresented: $model.showQuickPark) {
+            QuickParkSheet().presentationBackground(Theme.Palette.surface)
+        }
         .overlay(alignment: .bottom) {
             if let toast = model.toast {
                 ToastView(text: toast.text)
-                    .padding(.bottom, 18)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .padding(.bottom, Theme.Space.l)
+                    .transition(.opacity.combined(with: .offset(y: Theme.Space.xs)))
                     .id(toast.id)
-            }
-        }
-        .overlay {
-            if model.celebrating {
-                CelebrationView().transition(.scale(scale: 0.9).combined(with: .opacity))
             }
         }
     }
 
-    @ViewBuilder private var detail: some View {
-        switch model.section {
-        case .today: TodayView(tasks: tasks)
-        case let .list(l) where l == .parkingLot: ParkingLotView(tasks: tasks)
-        case let .list(l): ListScreen(list: l, tasks: tasks)
-        case .calendar: CalendarScreen()
-        case .done: DoneView(tasks: tasks)
+    // MARK: Header
+
+    private var header: some View {
+        HStack(spacing: Theme.Space.s) {
+            Text(title).font(Theme.Fonts.bodyMedium).foregroundStyle(Theme.Palette.text)
+            if let subtitle {
+                Text(subtitle).font(Theme.Fonts.small).foregroundStyle(Theme.Palette.textTertiary)
+            }
+            Spacer()
+            accessory
+            HStack(spacing: Theme.Space.xxs) {
+                IconButton(symbol: "plus", help: "New task (⌘N)") { model.newTask() }
+                IconButton(symbol: "lightbulb", help: "Park an idea (⇧⌘P)") { model.showQuickPark = true }
+                IconButton(symbol: "sidebar.right", help: showPanel ? "Hide today's calendar" : "Show today's calendar",
+                           active: showPanel) {
+                    withAnimation(Theme.Motion.list) { showPanel.toggle() }
+                }
+            }
         }
+        .padding(.leading, Theme.Space.xl)
+        .padding(.trailing, Theme.Space.m)
+        .frame(height: Theme.Size.header)
+        .background(WindowDragArea())
     }
 
     private var title: String {
@@ -65,48 +87,48 @@ struct ContentView: View {
         case .done: "Done"
         }
     }
-}
 
-struct ToastView: View {
-    let text: String
-    var body: some View {
-        Text(text)
-            .font(Theme.secondary.weight(.medium))
-            .padding(.horizontal, 12)
-            .padding(.vertical, 7)
-            .background(.regularMaterial, in: Capsule())
-            .overlay(Capsule().strokeBorder(Theme.hairline))
-            .shadow(color: .black.opacity(0.15), radius: 8, y: 2)
-    }
-}
-
-/// A short, quiet celebration: a seal and a ring of dots that drift outward.
-struct CelebrationView: View {
-    @State private var burst = false
-
-    var body: some View {
-        ZStack {
-            ForEach(0..<16, id: \.self) { i in
-                let angle = Double(i) / 16 * 2 * .pi
-                Circle()
-                    .fill(Color.accentColor.opacity(i.isMultiple(of: 2) ? 0.7 : 0.35))
-                    .frame(width: 5, height: 5)
-                    .offset(x: burst ? cos(angle) * 90 : 0, y: burst ? sin(angle) * 90 : 0)
-                    .opacity(burst ? 0 : 1)
-            }
-            VStack(spacing: 8) {
-                Image(systemName: "checkmark.seal.fill")
-                    .font(.system(size: 40, weight: .light))
-                    .foregroundStyle(Color.accentColor)
-                    .symbolEffect(.bounce, value: burst)
-                Text("All three done").font(Theme.bodyMedium)
-                Text("That's the day's work.").font(Theme.secondary).foregroundStyle(.secondary)
-            }
-            .padding(24)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.hairline))
+    private var subtitle: String? {
+        switch model.section {
+        case .today, .calendar:
+            return (DayKey.date(from: model.today) ?? Date()).formatted(.dateTime.weekday(.wide).month(.wide).day())
+        case let .list(l) where l == .parkingLot:
+            return "Ideas remind you after an hour"
+        case let .list(l):
+            let n = model.ordered(l, in: tasks).count
+            return n == 1 ? "1 open" : "\(n) open"
+        case .done:
+            let n = DoneView.completed(in: tasks).count
+            return n == 1 ? "1 task" : "\(n) tasks"
         }
-        .allowsHitTesting(false)
-        .onAppear { withAnimation(.easeOut(duration: 1.1)) { burst = true } }
+    }
+
+    @ViewBuilder private var accessory: some View {
+        switch model.section {
+        case .today:
+            TodayStats(tasks: tasks).padding(.trailing, Theme.Space.s)
+        case let .list(l) where l != .parkingLot:
+            AutoSortControl(list: l)
+        case .calendar where model.calendar.hasAccess:
+            Button("Sync now") { model.syncAllEvents() }.buttonStyle(.ghost)
+            Button("Open Calendar") {
+                NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Calendar.app"))
+            }
+            .buttonStyle(.ghost)
+        default:
+            EmptyView()
+        }
+    }
+
+    // MARK: Detail
+
+    @ViewBuilder private var detail: some View {
+        switch model.section {
+        case .today: TodayView(tasks: tasks)
+        case let .list(l) where l == .parkingLot: ParkingLotView(tasks: tasks)
+        case let .list(l): ListScreen(list: l, tasks: tasks)
+        case .calendar: CalendarScreen()
+        case .done: DoneView(tasks: tasks)
+        }
     }
 }

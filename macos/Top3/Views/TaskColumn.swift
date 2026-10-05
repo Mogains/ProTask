@@ -11,21 +11,21 @@ struct TaskColumn: View {
     @State private var endTargeted = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
+        VStack(alignment: .leading, spacing: 0) {
             if showHeader {
                 HStack {
-                    SectionHeader(title: list.title, detail: "\(tasks.count)")
+                    SectionLabel(title: list.title, detail: "\(tasks.count)")
                     Spacer()
-                    AutoSortButton(list: list)
+                    AutoSortControl(list: list)
                 }
-                .padding(.horizontal, 8)
-                .padding(.bottom, 4)
+                .padding(.leading, Theme.Space.s)
+                .frame(height: Theme.Size.row)
             }
 
             ForEach(tasks) { task in
                 VStack(spacing: 0) {
                     InsertionLine(visible: targetID == task.id)
-                    TaskRow(task: task)
+                    TaskRow(task: task, showDivider: task.id != tasks.last?.id)
                         .draggable(TaskRef(id: task.id)) { DragPreview(title: task.title) }
                 }
                 .dropDestination(for: TaskRef.self) { items, _ in
@@ -33,74 +33,71 @@ struct TaskColumn: View {
                 } isTargeted: { on in
                     if on { targetID = task.id } else if targetID == task.id { targetID = nil }
                 }
-                .transition(.asymmetric(insertion: .opacity, removal: .opacity.combined(with: .move(edge: .trailing))))
+                .transition(.opacity)
             }
 
-            VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
                 InsertionLine(visible: endTargeted && !tasks.isEmpty)
                 if tasks.isEmpty {
-                    Text(endTargeted ? "Drop here" : "No tasks")
-                        .font(Theme.secondary)
-                        .foregroundStyle(.tertiary)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(RoundedRectangle(cornerRadius: 6).strokeBorder(endTargeted ? Color.accentColor : Theme.hairline, style: StrokeStyle(lineWidth: 1, dash: [3, 3])))
-                } else {
-                    Color.clear.frame(height: 18)
+                    EmptyLine(text: endTargeted ? "Drop here" : "No tasks")
+                        .padding(.leading, Theme.Space.s)
+                        .rowFill(hovering: endTargeted)
                 }
-                Button { model.newTask(in: list) } label: {
-                    Label("Add task", systemImage: "plus").font(Theme.secondary)
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                NewTaskButton { model.newTask(in: list) }
             }
             .contentShape(Rectangle())
             .dropDestination(for: TaskRef.self) { items, _ in
                 drop(items, before: nil)
-            } isTargeted: { endTargeted = $0 }
+            } isTargeted: { on in
+                withAnimation(Theme.Motion.hover) { endTargeted = on }
+            }
         }
     }
 
     private func drop(_ items: [TaskRef], before: UUID?) -> Bool {
         guard let ref = items.first else { return false }
-        withAnimation(.snappy) { model.move(ref.id, to: list, before: before, manual: true) }
+        withAnimation(Theme.Motion.list) { model.move(ref.id, to: list, before: before, manual: true) }
         return true
     }
 }
 
-struct InsertionLine: View {
-    let visible: Bool
+struct NewTaskButton: View {
+    var title = "New task"
+    let action: () -> Void
+    @State private var hovering = false
+
     var body: some View {
-        Rectangle()
-            .fill(Color.accentColor)
-            .frame(height: 2)
-            .padding(.horizontal, 6)
-            .opacity(visible ? 1 : 0)
+        Button(action: action) {
+            HStack(spacing: Theme.Space.s) {
+                Image(systemName: "plus").font(.system(size: Theme.Size.dragHandle))
+                    .frame(width: Theme.Size.checkbox)
+                Text(title).font(Theme.Fonts.small)
+                Spacer()
+            }
+            .foregroundStyle(hovering ? Theme.Palette.textSecondary : Theme.Palette.textTertiary)
+            .padding(.leading, Theme.Space.s + Theme.Size.dragHandle + Theme.Space.s)
+            .frame(height: Theme.Size.row)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { h in withAnimation(Theme.Motion.hover) { hovering = h } }
     }
 }
 
-struct AutoSortButton: View {
+/// Small icon button with a tiny label showing the list's sort mode.
+struct AutoSortControl: View {
     @Environment(AppModel.self) private var model
     let list: ListKind
 
     var body: some View {
         let on = model.isAutoSort(list)
-        Button { withAnimation(.snappy) { model.toggleAutoSort(list) } } label: {
-            HStack(spacing: 3) {
-                Image(systemName: on ? "arrow.up.arrow.down" : "hand.point.up.left")
-                Text(on ? "Auto" : "Manual")
-            }
-            .font(Theme.caption)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .foregroundStyle(on ? Color.accentColor : Color.secondary)
-            .background(Capsule().strokeBorder(on ? Color.accentColor.opacity(0.5) : Theme.hairline))
+        IconButton(symbol: on ? "arrow.up.arrow.down" : "hand.point.up.left",
+                   help: on
+                       ? "Auto sort: due date, then priority, then shortest first. Dragging a task switches to manual."
+                       : "Manual order. Click to auto sort by due date, priority, then shortest first.",
+                   label: on ? "Auto" : "Manual",
+                   active: on) {
+            withAnimation(Theme.Motion.list) { model.toggleAutoSort(list) }
         }
-        .buttonStyle(.plain)
-        .help(on
-            ? "Auto sort: due date, then priority, then shortest first. Dragging a task switches to manual."
-            : "Manual order. Click to auto sort by due date, priority, then shortest first.")
     }
 }

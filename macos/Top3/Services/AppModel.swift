@@ -62,8 +62,14 @@ final class AppModel {
     @ObservationIgnored private var activeObserver: NSObjectProtocol?
 
     init() {
-        let dir = URL.applicationSupportDirectory.appending(path: "Top 3", directoryHint: .isDirectory)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let fm = FileManager.default
+        let dir = URL.applicationSupportDirectory.appending(path: "ProTask", directoryHint: .isDirectory)
+        // Carry data over from the app's previous name.
+        let legacy = URL.applicationSupportDirectory.appending(path: "Top 3", directoryHint: .isDirectory)
+        if !fm.fileExists(atPath: dir.path), fm.fileExists(atPath: legacy.path) {
+            try? fm.moveItem(at: legacy, to: dir)
+        }
+        try? fm.createDirectory(at: dir, withIntermediateDirectories: true)
         // TOP3_STORE_PATH lets tests and screenshots use a throwaway database.
         let storeURL = ProcessInfo.processInfo.environment["TOP3_STORE_PATH"].map { URL(fileURLWithPath: $0) }
             ?? dir.appending(path: "Top3.store")
@@ -71,7 +77,7 @@ final class AppModel {
         do {
             container = try ModelContainer(for: TaskItem.self, ListSetting.self, DayLog.self, configurations: config)
         } catch {
-            fatalError("Could not open the Top 3 database: \(error)")
+            fatalError("Could not open the ProTask database: \(error)")
         }
         today = DayKey.key(resetHour: Self.savedResetHour())
         for s in (try? context.fetch(FetchDescriptor<ListSetting>())) ?? [] {
@@ -438,18 +444,19 @@ final class AppModel {
 
     func showToast(_ text: String) {
         let msg = ToastMessage(text: text)
-        withAnimation(.snappy) { toast = msg }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
+        withAnimation(Theme.Motion.standard) { toast = msg }
+        DispatchQueue.main.asyncAfter(deadline: .now() + Theme.Motion.toastDuration) { [weak self] in
             guard self?.toast == msg else { return }
-            withAnimation(.easeOut) { self?.toast = nil }
+            withAnimation(Theme.Motion.standard) { self?.toast = nil }
         }
     }
 
     private func celebrate() {
         NSSound(named: "Glass")?.play()
-        withAnimation(.spring(duration: 0.4)) { celebrating = true }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.4) { [weak self] in
-            withAnimation(.easeOut(duration: 0.4)) { self?.celebrating = false }
+        celebrating = true
+        showToast("All three done.")
+        DispatchQueue.main.asyncAfter(deadline: .now() + Theme.Motion.toastDuration) { [weak self] in
+            self?.celebrating = false
         }
     }
 
