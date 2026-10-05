@@ -4,7 +4,7 @@ import SwiftUI
 /// images in Assets.xcassets/Icons, so they tint with `foregroundStyle`.
 enum IconName: String, CaseIterable {
     case today, haveTo = "have-to", niceTo = "nice-to", parking, calendar, done, settings
-    case add, autoSort = "auto-sort", manual, panel, quickAdd = "quick-add", more, delete, send, later, close
+    case sidebar, search, add, autoSort = "auto-sort", manual, panel, quickAdd = "quick-add", more, delete, send, later, close
     case `repeat`, drag, due, priority1 = "priority-1", priority2 = "priority-2", priority3 = "priority-3", notes, idea
     case mark
 

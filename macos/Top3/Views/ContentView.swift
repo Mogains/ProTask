@@ -6,15 +6,19 @@ struct ContentView: View {
     @Environment(AppModel.self) private var model
     @Query(animation: Theme.Motion.list) private var tasks: [TaskItem]
     @AppStorage("showCalendarPanel") private var showPanel = true
+    @AppStorage("showSidebar") private var showSidebar = true
 
     var body: some View {
         @Bindable var model = model
         HStack(spacing: 0) {
-            SidebarView(tasks: tasks)
-                .frame(width: Theme.Size.sidebarWidth)
-                .frame(maxHeight: .infinity)
-                .background(Theme.Palette.surface)
-            Hairline(vertical: true)
+            if showSidebar {
+                SidebarView(tasks: tasks)
+                    .frame(width: Theme.Size.sidebarWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(Theme.Palette.surface)
+                    .transition(.move(edge: .leading).combined(with: .opacity))
+                Hairline(vertical: true)
+            }
 
             VStack(spacing: 0) {
                 header
@@ -44,6 +48,13 @@ struct ContentView: View {
         .sheet(isPresented: $model.showQuickPark) {
             QuickParkSheet().presentationBackground(Theme.Palette.surface)
         }
+        .overlay {
+            if model.showPalette {
+                CommandPalette(tasks: tasks).transition(.opacity)
+            }
+        }
+        .animation(Theme.Motion.standard, value: model.showPalette)
+        .animation(Theme.Motion.list, value: showSidebar)
         .overlay(alignment: .bottom) {
             if let toast = model.toast {
                 ToastView(text: toast.text)
@@ -58,6 +69,9 @@ struct ContentView: View {
 
     private var header: some View {
         HStack(spacing: Theme.Space.s) {
+            IconButton(icon: .sidebar, help: showSidebar ? "Hide sidebar (⌃⌘S)" : "Show sidebar (⌃⌘S)") {
+                withAnimation(Theme.Motion.list) { showSidebar.toggle() }
+            }
             Text(title).font(Theme.Fonts.bodyMedium).foregroundStyle(Theme.Palette.text)
             if let subtitle {
                 Text(subtitle).font(Theme.Fonts.small).foregroundStyle(Theme.Palette.textTertiary)
@@ -65,6 +79,7 @@ struct ContentView: View {
             Spacer()
             accessory
             HStack(spacing: Theme.Space.xxs) {
+                IconButton(icon: .search, help: "Command palette (⌘K)") { model.showPalette = true }
                 IconButton(icon: .add, help: "New task (⌘N)") { model.newTask() }
                 IconButton(icon: .quickAdd, help: "Park an idea (⇧⌘P)") { model.showQuickPark = true }
                 IconButton(icon: .panel, help: showPanel ? "Hide today's calendar" : "Show today's calendar",
@@ -73,7 +88,7 @@ struct ContentView: View {
                 }
             }
         }
-        .padding(.leading, Theme.Space.xl)
+        .padding(.leading, showSidebar ? Theme.Space.m : Theme.Size.trafficLights)
         .padding(.trailing, Theme.Space.m)
         .frame(height: Theme.Size.header)
         .background(WindowDragArea())

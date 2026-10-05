@@ -63,3 +63,18 @@ final class TaskParserTests: XCTestCase {
         XCTAssertEqual(TaskParser.parse("call mom at 6pm", now: now, calendar: cal).title, "call mom")
     }
 }
+
+final class FuzzyTests: XCTestCase {
+    func testSubsequenceMatches() {
+        XCTAssertNotNil(Fuzzy.score("nt", in: "New task"))
+        XCTAssertNil(Fuzzy.score("xyz", in: "New task"))
+        XCTAssertEqual(Fuzzy.score("", in: "anything"), 0)
+    }
+
+    func testWordStartsAndPrefixesRankHigher() {
+        let a = Fuzzy.score("gt", in: "Go to Today")!
+        let b = Fuzzy.score("gt", in: "Big thing")!
+        XCTAssertGreaterThan(a, b)
+        XCTAssertGreaterThan(Fuzzy.score("new", in: "New idea")!, Fuzzy.score("new", in: "Renew passport")!)
+    }
+}

@@ -19,6 +19,11 @@ struct Top3Commands: Commands {
             Button("Delete Task") { model.deleteSelected() }
         }
         CommandGroup(before: .sidebar) {
+            WindowAction("Command Palette", key: "k", modifiers: .command) { model.showPalette.toggle() }
+            WindowAction("Toggle Sidebar", key: "s", modifiers: [.command, .control]) {
+                withAnimation(Theme.Motion.list) { model.toggleSidebar() }
+            }
+            Divider()
             Button("Today") { model.section = .today }.keyboardShortcut("0", modifiers: [.command, .option])
             ForEach(Array(ListKind.allCases.enumerated()), id: \.element) { i, l in
                 Button(l.title) { model.section = .list(l) }

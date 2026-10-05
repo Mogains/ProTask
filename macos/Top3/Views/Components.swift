@@ -162,7 +162,6 @@ struct InputField: View {
                 .focused($focused)
                 .focusEffectDisabled()
                 .onSubmit(onSubmit)
-                .onKeyPress(.delete) { onDeleteKey?() == true ? .handled : .ignored }
         }
         .padding(.horizontal, bordered ? Theme.Space.s : 0)
         .padding(.vertical, bordered ? Theme.Space.s - Theme.Space.xxs : 0)
@@ -171,6 +170,42 @@ struct InputField: View {
                           lineWidth: Theme.Size.hairline))
         .animation(Theme.Motion.hover, value: focused)
         .onAppear { if focusOnAppear { DispatchQueue.main.async { focused = true } } }
+        .background(KeyMonitor(active: focused && onDeleteKey != nil) { event in
+            event.keyCode == KeyMonitor.backspace && event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty
+                && onDeleteKey?() == true
+        })
+    }
+}
+
+/// Watches key presses while `active`; return true from `handle` to swallow the key.
+struct KeyMonitor: View {
+    static let backspace: UInt16 = 51
+    static let returnKey: UInt16 = 36
+    static let escape: UInt16 = 53
+    static let up: UInt16 = 126
+    static let down: UInt16 = 125
+
+    let active: Bool
+    let handle: (NSEvent) -> Bool
+    @State private var monitor: Any?
+
+    var body: some View {
+        Color.clear
+            .onAppear { update() }
+            .onChange(of: active) { update() }
+            .onDisappear { remove() }
+    }
+
+    private func update() {
+        remove()
+        guard active else { return }
+        let handler = handle
+        monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in handler(event) ? nil : event }
+    }
+
+    private func remove() {
+        if let monitor { NSEvent.removeMonitor(monitor) }
+        monitor = nil
     }
 }
 

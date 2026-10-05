@@ -47,6 +47,7 @@ final class AppModel {
     var selectedTaskID: UUID?
     var editor: EditorRequest?
     var showQuickPark = false
+    var showPalette = false
     var toast: ToastMessage?
     var celebrating = false
     private(set) var today: String
@@ -93,6 +94,7 @@ final class AppModel {
         runMorningReset()
         HotKeyService.shared.onPress = { QuickCaptureController.shared.toggle() }
         HotKeyService.shared.register(HotKey.saved)
+        applyAppearance()
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.checkDay()
@@ -396,6 +398,9 @@ final class AppModel {
         if log.top3Complete != complete { log.top3Complete = complete }
     }
 
+    /// Hook for features that add palette actions (focus timer, review…).
+    func extraPaletteActions() -> [PaletteItem] { [] }
+
     // MARK: Quick capture
 
     /// Saves text from a quick-add field, routed by its prefix ("~" Nice to do, "?" Parking Lot).
@@ -538,6 +543,15 @@ final class AppModel {
             view.cacheDisplay(in: view.bounds, to: rep)
             try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: dir).appending(path: "\(name).png"))
         }
+        captureWindow(as: "palette", in: dir) { self.section = .today; self.showPalette = true }
+        try? await Task.sleep(for: .seconds(0.6))
+        captureWindow(as: "palette", in: dir) {}
+        showPalette = false
+        for (name, action) in debugExtraShots() {
+            action()
+            try? await Task.sleep(for: .seconds(0.8))
+            captureWindow(as: name, in: dir) {}
+        }
         if env["TOP3_SNAPSHOT_PIN4"] != nil, let extra = allTasks().first(where: { $0.title == "Read two chapters" }) {
             section = .today
             pin(extra.id)
@@ -549,6 +563,18 @@ final class AppModel {
             }
         }
         NSApp.terminate(nil)
+    }
+
+    /// Extra states to capture in debug snapshots (sheets, overlays added by later features).
+    func debugExtraShots() -> [(String, () -> Void)] { [] }
+
+    private func captureWindow(as name: String, in dir: String, before: () -> Void) {
+        before()
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.canBecomeMain }),
+              let view = window.contentView?.superview ?? window.contentView,
+              let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+        view.cacheDisplay(in: view.bounds, to: rep)
+        try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: dir).appending(path: "\(name).png"))
     }
 
     /// Sample data for screenshots (debug builds, TOP3_DEMO set, empty store only).
