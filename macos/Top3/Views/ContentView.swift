@@ -125,6 +125,9 @@ struct ContentView: View {
             return (DayKey.date(from: model.today) ?? Date()).formatted(.dateTime.weekday(.wide).month(.wide).day())
         case let .list(l) where l == .parkingLot:
             return "Ideas remind you after an hour"
+        case let .list(l) where l == .waitingOn:
+            let n = model.ordered(l, in: tasks).count
+            return n == 1 ? "1 waiting" : "\(n) waiting"
         case let .list(l):
             let n = model.ordered(l, in: tasks).count
             return n == 1 ? "1 open" : "\(n) open"
@@ -138,7 +141,7 @@ struct ContentView: View {
         switch model.section {
         case .today:
             TodayStats(tasks: tasks).padding(.trailing, Theme.Space.s)
-        case let .list(l) where l != .parkingLot:
+        case let .list(l) where ListKind.taskLists.contains(l):
             AutoSortControl(list: l)
         case .calendar where model.calendar.hasAccess:
             Button("Sync now") { model.syncAllEvents() }.buttonStyle(.ghost)

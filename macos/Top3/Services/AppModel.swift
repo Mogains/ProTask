@@ -25,6 +25,8 @@ struct TaskDraft {
     var hasDueTime = false
     var estimateMinutes: Int?
     var recurrence: RecurrenceRule?
+    var waitingOn: String = ""
+    var followUpDate: Date?
 }
 
 struct ToastMessage: Identifiable, Equatable {
@@ -92,6 +94,7 @@ final class AppModel {
         for s in (try? context.fetch(FetchDescriptor<ListSetting>())) ?? [] {
             if let l = ListKind(rawValue: s.listRaw) { autoSort[l] = s.autoSort }
         }
+        notifications.extraCategories = [Self.followUpCategory]
         notifications.onAction = { [weak self] id, action in self?.handleIdeaAction(id: id, action: action) }
         notifications.onOther = { [weak self] identifier, action in self?.handleNotification(identifier, action: action) }
     }
@@ -200,6 +203,9 @@ final class AppModel {
     func ordered(_ list: ListKind, in tasks: [TaskItem]) -> [TaskItem] {
         let open = tasks.filter { $0.list == list && !$0.isCompleted && $0.topSlot == nil }
         if list == .parkingLot { return open.sorted { $0.createdAt > $1.createdAt } }
+        if list == .waitingOn {
+            return open.sorted { ($0.followUpDate ?? .distantFuture, $0.createdAt) < ($1.followUpDate ?? .distantFuture, $1.createdAt) }
+        }
         return isAutoSort(list) ? TaskSorting.sorted(open) : open.sorted { $0.position < $1.position }
     }
 
@@ -241,6 +247,7 @@ final class AppModel {
         apply(d, to: t)
         context.insert(t)
         if t.isIdea { scheduleReminder(t) }
+        scheduleFollowUp(t)
         calendar.sync(t, today: today)
         save()
         selectedTaskID = t.id
@@ -254,7 +261,9 @@ final class AppModel {
             t.position = endPosition(of: t.list)
             if oldList == .parkingLot { notifications.cancel(id: t.id); t.remindAt = nil }
             if t.list == .parkingLot { t.topSlot = nil; t.topDay = nil; scheduleReminder(t) }
+            if t.list == .waitingOn { t.topSlot = nil; t.topDay = nil }
         }
+        scheduleFollowUp(t)
         calendar.sync(t, today: today)
         refreshDayLog()
         save()
@@ -268,7 +277,9 @@ final class AppModel {
         t.dueDate = d.dueDate
         t.hasDueTime = d.dueDate != nil && d.hasDueTime
         t.estimateMinutes = d.estimateMinutes.flatMap { $0 > 0 ? min($0, 1440) : nil }
-        t.recurrence = d.list == .parkingLot ? nil : d.recurrence
+        t.recurrence = d.list == .parkingLot || d.list == .waitingOn ? nil : d.recurrence
+        t.waitingOn = d.list == .waitingOn ? d.waitingOn.trimmingCharacters(in: .whitespaces) : ""
+        t.followUpDate = d.list == .waitingOn ? d.followUpDate : nil
         if t.recurrence != nil {
             // A repeating task needs a date to repeat from.
             if t.dueDate == nil { t.dueDate = DayKey.date(from: today) ?? Calendar.current.startOfDay(for: Date()) }
@@ -279,6 +290,7 @@ final class AppModel {
     func delete(_ t: TaskItem) {
         calendar.removeEvent(id: t.calendarEventID)
         notifications.cancel(id: t.id)
+        notifications.cancel(identifier: Self.followUpID(t.id))
         if selectedTaskID == t.id { selectedTaskID = nil }
         let title = t.title
         context.delete(t)
@@ -293,6 +305,7 @@ final class AppModel {
         t.completedAt = done ? Date() : nil
         calendar.sync(t, today: today)
         if done { spawnNextOccurrence(of: t) }
+        scheduleFollowUp(t)
         refreshDayLog()
         save()
         if !wasAllDone && allPinnedDone(in: allTasks()) { celebrate() }
@@ -345,6 +358,8 @@ final class AppModel {
             notifications.cancel(id: id)
             t.remindAt = nil
         }
+        if list != .waitingOn { t.followUpDate = nil }
+        scheduleFollowUp(t)
         if list != .parkingLot {
             let byID = Dictionary(uniqueKeysWithValues: all.map { ($0.id, $0) })
             for (i, tid) in ids.enumerated() { byID[tid]?.position = Double(i + 1) * 1000 }
@@ -378,6 +393,7 @@ final class AppModel {
     func pin(_ id: UUID, slot: Int? = nil) {
         guard let t = task(id) else { return }
         if t.isIdea { return showToast("Send the idea to a list first.") }
+        if t.isWaiting { return showToast("Move it to Have to do first.") }
         if t.isCompleted { return showToast("That one is already done.") }
         let all = allTasks()
         let occupants = all.compactMap { x in x.topSlot.map { Top3Planner.Occupant(slot: $0, taskID: x.id) } }
@@ -622,6 +638,7 @@ final class AppModel {
     /// Extra states to capture in debug snapshots (sheets, overlays added by later features).
     func debugExtraShots() -> [(String, () -> Void)] {
         [("planning", { self.showPlanning = true }), ("wrapup", { self.showWrapUp = true }),
+         ("waiting", { self.section = .list(.waitingOn) }), ("today2", { self.section = .today }),
          ("focus", {
              self.section = .list(.haveTo)
              // In memory only, so snapshots never touch real preferences.
@@ -670,6 +687,9 @@ final class AppModel {
         for d in 1...4 { dayLog(DayKey.adding(-d, to: today)).top3Complete = true }
         if let passport = allTasks().first(where: { $0.title == "Renew passport" }) { addRolledOver([passport.id], to: today) }
         report.actualSeconds = 40 * 60
+        addTask(TaskDraft(title: "Contract redlines", list: .waitingOn, waitingOn: "Legal", followUpDate: cal.startOfDay(for: now)))
+        addTask(TaskDraft(title: "Logo options", list: .waitingOn, waitingOn: "Maya",
+                          followUpDate: cal.date(byAdding: .day, value: 4, to: cal.startOfDay(for: now))))
         refreshDayLog()
         selectedTaskID = nil
         save()

@@ -17,6 +17,15 @@ struct TodayView: View {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 if showPrompt { prompt }
                 Top3Block(pins: pins)
+                let followUps = tasks.filter { model.isFollowUpDue($0) }
+                if !followUps.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        SectionLabel(title: "Follow up", detail: "\(followUps.count)")
+                            .padding(.leading, Theme.Space.s)
+                            .frame(height: Theme.Size.row)
+                        ForEach(followUps) { TaskRow(task: $0, showDivider: $0.id != followUps.last?.id, showHandle: false) }
+                    }
+                }
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .top, spacing: Theme.Space.xl) {
                         TaskColumn(list: .haveTo, tasks: haveTo)

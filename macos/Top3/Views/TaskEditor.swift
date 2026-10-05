@@ -18,6 +18,9 @@ struct TaskEditor: View {
     @State private var repeatInterval = "1"
     @State private var repeatUnit: RecurrenceRule.Unit = .days
     @State private var repeatDays: Set<Int> = []
+    @State private var waitingOn = ""
+    @State private var hasFollowUp = false
+    @State private var followUp = Calendar.current.date(byAdding: .day, value: 3, to: Calendar.current.startOfDay(for: Date()))!
     @State private var originalTitle = ""
 
     var body: some View {
@@ -36,7 +39,21 @@ struct TaskEditor: View {
                 PropertyRow(label: "List") {
                     Segments(options: listChoices, selection: $list) { $0.title }
                 }
-                if list != .parkingLot {
+                if list == .waitingOn {
+                    PropertyRow(label: "Waiting on") {
+                        InputField(placeholder: "Who (optional)", text: $waitingOn, font: Theme.Fonts.small)
+                    }
+                    PropertyRow(label: "Follow up") {
+                        if hasFollowUp {
+                            DatePicker("Follow up", selection: $followUp, displayedComponents: .date)
+                                .labelsHidden().datePickerStyle(.field).font(Theme.Fonts.small)
+                            Spacer()
+                            Button("Clear") { hasFollowUp = false }.buttonStyle(.ghost)
+                        } else {
+                            Button("Set date") { hasFollowUp = true }.buttonStyle(.ghost)
+                        }
+                    }
+                } else if list != .parkingLot {
                     PropertyRow(label: "Priority") {
                         Segments(options: Priority.allCases, selection: $priority) { $0.title }
                     }
@@ -159,7 +176,7 @@ struct TaskEditor: View {
     }
 
     private var listChoices: [ListKind] {
-        request.task?.isIdea == true ? ListKind.allCases : ListKind.taskLists
+        request.task?.isIdea == true ? ListKind.allCases : ListKind.taskLists + [.waitingOn]
     }
 
     private func load() {
@@ -176,6 +193,8 @@ struct TaskEditor: View {
                 hasTime = t.hasDueTime
             }
             estimate = t.estimateMinutes.map(String.init) ?? ""
+            waitingOn = t.waitingOn
+            if let f = t.followUpDate { hasFollowUp = true; followUp = f }
             if let r = t.recurrence {
                 repeatKind = r.kind
                 repeatInterval = String(r.interval)
@@ -189,7 +208,7 @@ struct TaskEditor: View {
         guard !title.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         // Natural language in the title fills the fields (only when the title was typed or changed here).
         var finalTitle = title
-        if list != .parkingLot && title != originalTitle {
+        if list != .parkingLot && list != .waitingOn && title != originalTitle {
             let p = TaskParser.parse(title, detectDates: detectDates)
             finalTitle = p.title
             if let d = p.dueDate { hasDue = true; dueDate = d; hasTime = p.hasDueTime }
@@ -197,12 +216,13 @@ struct TaskEditor: View {
             if let m = p.estimateMinutes { estimate = String(m) }
         }
         var due: Date? = nil
-        if hasDue && list != .parkingLot {
+        if hasDue && list != .parkingLot && list != .waitingOn {
             due = hasTime ? dueDate : Calendar.current.startOfDay(for: dueDate)
         }
         let draft = TaskDraft(title: finalTitle, notes: notes, list: list, priority: priority, dueDate: due,
                               hasDueTime: hasDue && hasTime, estimateMinutes: Int(estimate.trimmingCharacters(in: .whitespaces)),
-                              recurrence: draftRecurrence)
+                              recurrence: draftRecurrence, waitingOn: waitingOn,
+                              followUpDate: hasFollowUp ? Calendar.current.startOfDay(for: followUp) : nil)
         if let t = request.task { model.update(t, with: draft) } else { model.addTask(draft) }
         dismiss()
     }

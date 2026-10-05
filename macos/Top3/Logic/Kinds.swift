@@ -2,7 +2,7 @@ import Foundation
 
 /// The lists a task can live in. Parking Lot holds quick ideas that remind you after an hour.
 enum ListKind: String, CaseIterable, Codable, Identifiable {
-    case haveTo, niceTo, parkingLot
+    case haveTo, niceTo, waitingOn, parkingLot
 
     var id: String { rawValue }
 
@@ -10,6 +10,7 @@ enum ListKind: String, CaseIterable, Codable, Identifiable {
         switch self {
         case .haveTo: "Have to do"
         case .niceTo: "Nice to do"
+        case .waitingOn: "Waiting On"
         case .parkingLot: "Parking Lot"
         }
     }

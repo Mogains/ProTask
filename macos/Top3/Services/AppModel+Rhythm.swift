@@ -30,6 +30,7 @@ extension AppModel {
     /// Routes notifications added by later features (focus timer, follow-ups).
     func handleOtherNotification(_ identifier: String, action: String) {
         if identifier == RunningFocus.notificationID { finishFocusIfDue() }
+        if identifier.hasPrefix(Self.followUpPrefix) { handleFollowUpAction(identifier, action: action) }
     }
 
     func bringMainWindowForward() {

@@ -80,6 +80,14 @@ struct TaskRow: View {
                 IconButton(icon: .delete, help: "Delete") { withAnimation(Theme.Motion.list) { model.delete(task) } }
             }
             .opacity(reveal ? 1 : 0)
+        } else if task.isWaiting {
+            HStack(spacing: 0) {
+                IconButton(icon: .done, help: "Mark received", label: "Received") { withAnimation(Theme.Motion.list) { model.receive(task) } }
+                IconButton(icon: .later, help: "Snooze the follow-up 1 day", label: "1 day") { model.snoozeFollowUp(task) }
+                IconButton(icon: .send, help: "Move to Have to do", label: "Have") { withAnimation(Theme.Motion.list) { model.send(task, to: .haveTo) } }
+                ActionsMenu(help: "More actions") { TaskMenu(task: task) }
+            }
+            .opacity(reveal ? 1 : 0)
         } else {
             HStack(spacing: 0) {
                 if !task.isCompleted {
@@ -121,6 +129,13 @@ struct RowMeta: View {
         HStack(spacing: Theme.Space.m) {
             if task.isCompleted, let at = task.completedAt {
                 Text("Done \(Fmt.time(at))")
+            } else if task.isWaiting {
+                if !task.waitingOn.isEmpty { Text(task.waitingOn) }
+                if let f = task.followUpDate {
+                    let due = DayKey.dateKey(f) <= model.today
+                    Text(due ? "follow up" : "Follow up \(f.formatted(.dateTime.month(.abbreviated).day()))")
+                        .foregroundStyle(due ? Theme.Palette.textSecondary : Theme.Palette.textTertiary)
+                }
             } else if task.isIdea {
                 Text("Added \(Fmt.time(task.createdAt))")
                 if let r = task.remindAt {
@@ -165,7 +180,11 @@ struct TaskMenu: View {
 
     var body: some View {
         Button("Edit…") { model.edit(task) }
-        if task.isIdea {
+        if task.isWaiting && !task.isCompleted {
+            Button("Mark Received") { model.receive(task) }
+            Button("Snooze Follow-up 1 Day") { model.snoozeFollowUp(task) }
+            Button("Move to Have to do") { model.send(task, to: .haveTo) }
+        } else if task.isIdea {
             Button("Send to Have to do") { model.send(task, to: .haveTo) }
             Button("Send to Nice to do") { model.send(task, to: .niceTo) }
             Button("Keep in Parking Lot") { model.snooze(task) }
@@ -187,7 +206,7 @@ struct TaskMenu: View {
                     }
                 }
                 Menu("Move to") {
-                    ForEach(ListKind.taskLists) { l in
+                    ForEach(ListKind.taskLists + [.waitingOn]) { l in
                         Button(l.title) { model.send(task, to: l) }.disabled(l == task.list && task.topSlot == nil)
                     }
                 }

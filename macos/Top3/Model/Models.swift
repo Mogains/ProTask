@@ -32,6 +32,10 @@ final class TaskItem {
     var nextOccurrenceID: UUID?
     /// Focus time logged against this task, in seconds.
     var actualSeconds: Int = 0
+    /// Waiting On only: who it's waiting on.
+    var waitingOn: String = ""
+    /// Waiting On only: when to follow up.
+    var followUpDate: Date?
 
     init(title: String, list: ListKind, position: Double) {
         self.title = title
@@ -50,6 +54,7 @@ final class TaskItem {
     }
 
     var isIdea: Bool { list == .parkingLot }
+    var isWaiting: Bool { list == .waitingOn }
 
     var recurrence: RecurrenceRule? {
         get { RecurrenceRule(encoded: recurrenceRaw) }
@@ -63,7 +68,7 @@ final class TaskItem {
     }
 
     var statInfo: StatTask {
-        StatTask(isCompleted: isCompleted, completedAt: completedAt, dueDate: dueDate, isPinned: topSlot != nil, isIdea: isIdea)
+        StatTask(isCompleted: isCompleted, completedAt: completedAt, dueDate: dueDate, isPinned: topSlot != nil, isIdea: isIdea || isWaiting)
     }
 }
 

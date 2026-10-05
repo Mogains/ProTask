@@ -3,7 +3,7 @@ import SwiftUI
 /// ProTask's own icon set: hand-drawn 16x16 SVGs (scripts/make-icons.py) stored as template
 /// images in Assets.xcassets/Icons, so they tint with `foregroundStyle`.
 enum IconName: String, CaseIterable {
-    case today, haveTo = "have-to", niceTo = "nice-to", parking, calendar, done, settings
+    case today, haveTo = "have-to", niceTo = "nice-to", waiting, parking, calendar, done, settings
     case sidebar, search, add, autoSort = "auto-sort", manual, panel, quickAdd = "quick-add", more, delete, send, later, close
     case `repeat`, drag, due, priority1 = "priority-1", priority2 = "priority-2", priority3 = "priority-3", notes, idea
     case mark

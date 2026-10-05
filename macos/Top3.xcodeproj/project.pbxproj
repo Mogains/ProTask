@@ -46,6 +46,7 @@
 		81DB1AA9A55FD049DA40D531 /* TaskSorting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FFA3F51BEAFA7017DC57E81 /* TaskSorting.swift */; };
 		869F42336EC34A144A497F44 /* QuickCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0BA31C9937FEE2C44F9CF1B /* QuickCapture.swift */; };
 		8B15A67442413FDE67D594D0 /* Kinds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 863ADE93215C9182ED365546 /* Kinds.swift */; };
+		96B0A4270E4352A90D119521 /* AppModel+Waiting.swift in Sources */ = {isa = PBXBuildFile; fileRef = F57BCA430673FA1B07730160 /* AppModel+Waiting.swift */; };
 		98D35403941B8890E4B978FD /* FreeTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687954DCF8098A5D638E806C /* FreeTime.swift */; };
 		9ABE93CCFF5C53568E38484F /* AppModel+Focus.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDD3C06EC2FDC44060CC1EE9 /* AppModel+Focus.swift */; };
 		A1E27C7604C0741CC29378D2 /* Icon.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31F4076F12952256EAE76C7 /* Icon.swift */; };
@@ -126,6 +127,7 @@
 		E9004A2DDB7D42E3755C12AA /* Commands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands.swift; sourceTree = "<group>"; };
 		ED5BC245FB055764199EAB1C /* DoneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoneView.swift; sourceTree = "<group>"; };
 		EE826193A2219D9C73D30093 /* CommandPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPalette.swift; sourceTree = "<group>"; };
+		F57BCA430673FA1B07730160 /* AppModel+Waiting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Waiting.swift"; sourceTree = "<group>"; };
 		F83350B61CB921A518ECE286 /* Inter-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Medium.ttf"; sourceTree = "<group>"; };
 		FBD3604914003438677C4322 /* Top3Planner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Top3Planner.swift; sourceTree = "<group>"; };
 		FD47AF1A41A7BF8A64CC18AC /* Top3.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Top3.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -177,6 +179,7 @@
 				FDD3C06EC2FDC44060CC1EE9 /* AppModel+Focus.swift */,
 				703DB97F6EF6C79B6C91DEA9 /* AppModel+Palette.swift */,
 				19416EBFD505EDD1ABF664CF /* AppModel+Rhythm.swift */,
+				F57BCA430673FA1B07730160 /* AppModel+Waiting.swift */,
 				FE2FAE230C927133751DCD11 /* CalendarService.swift */,
 				92F6DE29BD9D40D5F3377682 /* HotKeyService.swift */,
 				2A1A8B56628621F1101DD20A /* NotificationService.swift */,
@@ -401,6 +404,7 @@
 				9ABE93CCFF5C53568E38484F /* AppModel+Focus.swift in Sources */,
 				521337CBAFD905E7AAE56F77 /* AppModel+Palette.swift in Sources */,
 				2F0EED5CDE23233A018F8FE2 /* AppModel+Rhythm.swift in Sources */,
+				96B0A4270E4352A90D119521 /* AppModel+Waiting.swift in Sources */,
 				D25C0CA5C6808D284E65E0FB /* AppModel.swift in Sources */,
 				D14D8DA817BA01FE0B83A1BD /* CalendarService.swift in Sources */,
 				3E876D6D20042D2E6AB7DA64 /* CalendarViews.swift in Sources */,

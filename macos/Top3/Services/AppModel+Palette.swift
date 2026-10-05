@@ -52,7 +52,7 @@ extension AppModel {
         ]
         for (i, l) in ListKind.allCases.enumerated() {
             items.append(PaletteItem(id: "go-\(l.rawValue)", title: "Go to \(l.title)", shortcut: "⌥⌘\(i + 1)", kind: .section,
-                                     icon: l == .parkingLot ? .parking : l == .niceTo ? .niceTo : .haveTo) { [self] in section = .list(l) })
+                                     icon: l == .parkingLot ? .parking : l == .niceTo ? .niceTo : l == .waitingOn ? .waiting : .haveTo) { [self] in section = .list(l) })
         }
         items += [
             PaletteItem(id: "go-calendar", title: "Go to Calendar", kind: .section, icon: .calendar) { [self] in section = .calendar },
