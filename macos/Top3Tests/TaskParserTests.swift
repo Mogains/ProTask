@@ -59,6 +59,15 @@ final class TaskParserTests: XCTestCase {
         XCTAssertFalse(p.hasExtras)
     }
 
+    func testTagsAreExtracted() {
+        let p = TaskParser.parse("plan offsite #Work #team-q4 tomorrow", now: now, calendar: cal)
+        XCTAssertEqual(p.tags, ["work", "team-q4"])
+        XCTAssertEqual(p.title, "plan offsite")
+        XCTAssertNotNil(p.dueDate)
+        XCTAssertEqual(TaskParser.parse("issue #42 fix", now: now).tags, ["42"])
+        XCTAssertEqual(TaskParser.parse("C# notes", now: now).tags, [], "a # inside a word is not a tag")
+    }
+
     func testDanglingConnectorIsRemoved() {
         XCTAssertEqual(TaskParser.parse("call mom at 6pm", now: now, calendar: cal).title, "call mom")
     }

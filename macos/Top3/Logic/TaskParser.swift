@@ -11,8 +11,10 @@ struct ParsedTask: Equatable {
     var datePhrase: String?
     /// Whether the date phrase ends the text, so Backspace can dismiss it.
     var dateAtEnd = false
+    /// Lowercased tags from "#tag" words.
+    var tags: [String] = []
 
-    var hasExtras: Bool { dueDate != nil || priority != nil || estimateMinutes != nil }
+    var hasExtras: Bool { dueDate != nil || priority != nil || estimateMinutes != nil || !tags.isEmpty }
 }
 
 enum TaskParser {
@@ -24,6 +26,13 @@ enum TaskParser {
                       detectDates: Bool = true) -> ParsedTask {
         var working = text
         var result = ParsedTask(title: text)
+
+        // Tags: "#word" (letters, digits, - and _).
+        while let m = firstMatch(#"(?<![\w#])#([\p{L}\p{N}_-]+)"#, in: working) {
+            let tag = m.captured.lowercased()
+            if !result.tags.contains(tag) { result.tags.append(tag) }
+            working.removeSubrange(m.range)
+        }
 
         // Priority: a standalone run of 1-3 "!".
         if let m = firstMatch(#"(?<![!\w])(!{1,3})(?![!\w])"#, in: working) {

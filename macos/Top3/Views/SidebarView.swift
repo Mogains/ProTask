@@ -31,6 +31,8 @@ struct SidebarView: View {
                 Spacer().frame(height: Theme.Space.l)
                 SidebarRow(section: .calendar, title: "Calendar", count: 0)
                 SidebarRow(section: .done, title: "Done", count: 0)
+
+                SidebarTags(tasks: tasks).padding(.top, Theme.Space.l)
             }
             .padding(.horizontal, Theme.Space.s)
 

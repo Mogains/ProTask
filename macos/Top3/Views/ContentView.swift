@@ -45,6 +45,9 @@ struct ContentView: View {
         .sheet(item: $model.editor) { request in
             TaskEditor(request: request).presentationBackground(Theme.Palette.surface)
         }
+        .sheet(item: $model.tagEditRequest) { request in
+            TagEditSheet(request: request).presentationBackground(Theme.Palette.surface)
+        }
         .sheet(item: $model.customFocusRequest) { request in
             CustomFocusSheet(request: request).presentationBackground(Theme.Palette.surface)
         }
@@ -91,6 +94,16 @@ struct ContentView: View {
             if let subtitle {
                 Text(subtitle).font(Theme.Fonts.small).foregroundStyle(Theme.Palette.textTertiary)
             }
+            if let tag = model.tagFilter {
+                Button { withAnimation(Theme.Motion.standard) { model.tagFilter = nil } } label: {
+                    HStack(spacing: Theme.Space.xs) {
+                        Text("#\(tag)")
+                        Icon(.close, size: Theme.Size.dragHandle)
+                    }
+                }
+                .buttonStyle(.ghost)
+                .help("Clear tag filter")
+            }
             Spacer()
             if !showSidebar { FocusTimerView(compact: true) }
             accessory
@@ -126,13 +139,13 @@ struct ContentView: View {
         case let .list(l) where l == .parkingLot:
             return "Ideas remind you after an hour"
         case let .list(l) where l == .waitingOn:
-            let n = model.ordered(l, in: tasks).count
+            let n = model.ordered(l, in: visible).count
             return n == 1 ? "1 waiting" : "\(n) waiting"
         case let .list(l):
-            let n = model.ordered(l, in: tasks).count
+            let n = model.ordered(l, in: visible).count
             return n == 1 ? "1 open" : "\(n) open"
         case .done:
-            let n = DoneView.completed(in: tasks).count
+            let n = DoneView.completed(in: visible).count
             return n == 1 ? "1 task" : "\(n) tasks"
         }
     }
@@ -156,7 +169,14 @@ struct ContentView: View {
 
     // MARK: Detail
 
+    /// Tasks for the current view, narrowed by the sidebar tag filter.
+    private var visible: [TaskItem] {
+        guard let tag = model.tagFilter else { return tasks }
+        return tasks.filter { $0.tags.contains(tag) }
+    }
+
     @ViewBuilder private var detail: some View {
+        let tasks = visible
         switch model.section {
         case .today: TodayView(tasks: tasks)
         case let .list(l) where l == .parkingLot: ParkingLotView(tasks: tasks)

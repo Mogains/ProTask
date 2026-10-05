@@ -27,6 +27,7 @@ struct TaskDraft {
     var recurrence: RecurrenceRule?
     var waitingOn: String = ""
     var followUpDate: Date?
+    var tags: [String] = []
 }
 
 struct ToastMessage: Identifiable, Equatable {
@@ -50,6 +51,9 @@ final class AppModel {
     var editor: EditorRequest?
     var showQuickPark = false
     var showPalette = false
+    /// Sidebar tag filter applied to the current view.
+    var tagFilter: String?
+    var tagEditRequest: TagEditRequest?
     var showPlanning = false
     var showWrapUp = false
     /// The running focus timer, if any. Persisted so it survives a restart.
@@ -280,6 +284,7 @@ final class AppModel {
         t.recurrence = d.list == .parkingLot || d.list == .waitingOn ? nil : d.recurrence
         t.waitingOn = d.list == .waitingOn ? d.waitingOn.trimmingCharacters(in: .whitespaces) : ""
         t.followUpDate = d.list == .waitingOn ? d.followUpDate : nil
+        t.tags = d.tags
         if t.recurrence != nil {
             // A repeating task needs a date to repeat from.
             if t.dueDate == nil { t.dueDate = DayKey.date(from: today) ?? Calendar.current.startOfDay(for: Date()) }
@@ -323,6 +328,7 @@ final class AppModel {
         next.dueDate = rule.nextOccurrence(after: base, today: Date())
         next.recurrenceRaw = t.recurrenceRaw
         next.seriesID = t.seriesID ?? t.id
+        next.tagsRaw = t.tagsRaw
         context.insert(next)
         t.nextOccurrenceID = next.id
         calendar.sync(next, today: today)
@@ -477,7 +483,7 @@ final class AppModel {
         if route.list == .parkingLot { return addIdea(route.text) }
         let p = TaskParser.parse(route.text, detectDates: detectDates)
         let draft = TaskDraft(title: p.title, list: route.list, priority: p.priority ?? .medium, dueDate: p.dueDate,
-                              hasDueTime: p.hasDueTime, estimateMinutes: p.estimateMinutes)
+                              hasDueTime: p.hasDueTime, estimateMinutes: p.estimateMinutes, tags: p.tags)
         guard addTask(draft) != nil else { return false }
         showToast("Added to \(route.list.title).")
         return true
@@ -620,6 +626,7 @@ final class AppModel {
             showPlanning = false
             showWrapUp = false
             focus = nil
+            tagFilter = nil
             try? await Task.sleep(for: .seconds(0.3))
         }
         if env["TOP3_SNAPSHOT_PIN4"] != nil, let extra = allTasks().first(where: { $0.title == "Read two chapters" }) {
@@ -639,6 +646,7 @@ final class AppModel {
     func debugExtraShots() -> [(String, () -> Void)] {
         [("planning", { self.showPlanning = true }), ("wrapup", { self.showWrapUp = true }),
          ("waiting", { self.section = .list(.waitingOn) }), ("today2", { self.section = .today }),
+         ("tagfilter", { self.section = .list(.haveTo); self.tagFilter = "work" }),
          ("focus", {
              self.section = .list(.haveTo)
              // In memory only, so snapshots never touch real preferences.
@@ -687,6 +695,9 @@ final class AppModel {
         for d in 1...4 { dayLog(DayKey.adding(-d, to: today)).top3Complete = true }
         if let passport = allTasks().first(where: { $0.title == "Renew passport" }) { addRolledOver([passport.id], to: today) }
         report.actualSeconds = 40 * 60
+        report.tags = ["work"]
+        allTasks().first { $0.title == "Reply to Sam about the offsite" }?.tags = ["work", "team"]
+        allTasks().first { $0.title == "Book dentist appointment" }?.tags = ["errands"]
         addTask(TaskDraft(title: "Contract redlines", list: .waitingOn, waitingOn: "Legal", followUpDate: cal.startOfDay(for: now)))
         addTask(TaskDraft(title: "Logo options", list: .waitingOn, waitingOn: "Maya",
                           followUpDate: cal.date(byAdding: .day, value: 4, to: cal.startOfDay(for: now))))

@@ -127,6 +127,7 @@ struct RowMeta: View {
 
     var body: some View {
         HStack(spacing: Theme.Space.m) {
+            ForEach(task.tags, id: \.self) { Text("#\($0)") }
             if task.isCompleted, let at = task.completedAt {
                 Text("Done \(Fmt.time(at))")
             } else if task.isWaiting {
@@ -212,6 +213,7 @@ struct TaskMenu: View {
                 }
             }
         }
+        Button("Tags…") { model.tagEditRequest = TagEditRequest(taskID: task.id) }
         Divider()
         Button("Delete", role: .destructive) { model.delete(task) }
     }

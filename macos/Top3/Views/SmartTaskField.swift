@@ -49,6 +49,7 @@ struct ParsePreview: View {
                 }
                 if let p = parsed.priority { Text("\(p.title) priority") }
                 if let m = Fmt.minutes(parsed.estimateMinutes) { Text(m) }
+                ForEach(parsed.tags, id: \.self) { Text("#\($0)") }
                 Spacer(minLength: 0)
             }
             .font(Theme.Fonts.secondary)

@@ -36,6 +36,8 @@ final class TaskItem {
     var waitingOn: String = ""
     /// Waiting On only: when to follow up.
     var followUpDate: Date?
+    /// Space-separated lowercase tags (no "#").
+    var tagsRaw: String = ""
 
     init(title: String, list: ListKind, position: Double) {
         self.title = title
@@ -55,6 +57,17 @@ final class TaskItem {
 
     var isIdea: Bool { list == .parkingLot }
     var isWaiting: Bool { list == .waitingOn }
+
+    var tags: [String] {
+        get { tagsRaw.split(separator: " ").map(String.init) }
+        set {
+            var seen: [String] = []
+            for t in newValue.map({ $0.lowercased().trimmingCharacters(in: CharacterSet(charactersIn: "# ,")) }) where !t.isEmpty && !seen.contains(t) {
+                seen.append(t)
+            }
+            tagsRaw = seen.joined(separator: " ")
+        }
+    }
 
     var recurrence: RecurrenceRule? {
         get { RecurrenceRule(encoded: recurrenceRaw) }

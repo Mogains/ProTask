@@ -19,6 +19,7 @@ struct TaskEditor: View {
     @State private var repeatUnit: RecurrenceRule.Unit = .days
     @State private var repeatDays: Set<Int> = []
     @State private var waitingOn = ""
+    @State private var tagsText = ""
     @State private var hasFollowUp = false
     @State private var followUp = Calendar.current.date(byAdding: .day, value: 3, to: Calendar.current.startOfDay(for: Date()))!
     @State private var originalTitle = ""
@@ -59,6 +60,9 @@ struct TaskEditor: View {
                     }
                     PropertyRow(label: "Due") { dueControls }
                     PropertyRow(label: "Estimate") { estimateControls }
+                    PropertyRow(label: "Tags") {
+                        InputField(placeholder: "work errands", text: $tagsText, font: Theme.Fonts.small)
+                    }
                     PropertyRow(label: "Repeat") {
                         Segments(options: [nil] + RecurrenceRule.Kind.allCases.map { Optional($0) }, selection: $repeatKind) {
                             $0?.title ?? "None"
@@ -194,6 +198,7 @@ struct TaskEditor: View {
             }
             estimate = t.estimateMinutes.map(String.init) ?? ""
             waitingOn = t.waitingOn
+            tagsText = t.tags.joined(separator: " ")
             if let f = t.followUpDate { hasFollowUp = true; followUp = f }
             if let r = t.recurrence {
                 repeatKind = r.kind
@@ -214,6 +219,7 @@ struct TaskEditor: View {
             if let d = p.dueDate { hasDue = true; dueDate = d; hasTime = p.hasDueTime }
             if let pr = p.priority { priority = pr }
             if let m = p.estimateMinutes { estimate = String(m) }
+            if !p.tags.isEmpty { tagsText = (tagsText.split(separator: " ").map(String.init) + p.tags).joined(separator: " ") }
         }
         var due: Date? = nil
         if hasDue && list != .parkingLot && list != .waitingOn {
@@ -222,7 +228,8 @@ struct TaskEditor: View {
         let draft = TaskDraft(title: finalTitle, notes: notes, list: list, priority: priority, dueDate: due,
                               hasDueTime: hasDue && hasTime, estimateMinutes: Int(estimate.trimmingCharacters(in: .whitespaces)),
                               recurrence: draftRecurrence, waitingOn: waitingOn,
-                              followUpDate: hasFollowUp ? Calendar.current.startOfDay(for: followUp) : nil)
+                              followUpDate: hasFollowUp ? Calendar.current.startOfDay(for: followUp) : nil,
+                              tags: tagsText.split(whereSeparator: { $0 == " " || $0 == "," }).map(String.init))
         if let t = request.task { model.update(t, with: draft) } else { model.addTask(draft) }
         dismiss()
     }
