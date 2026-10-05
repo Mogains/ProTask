@@ -88,6 +88,7 @@ struct SettingsView: View {
     @AppStorage("resetHour") private var resetHour = DayKey.defaultResetHour
     @AppStorage("morningPlanning") private var morningPlanning = true
     @AppStorage(AppModel.focusMinutesKey) private var focusMinutes = 25
+    @AppStorage(AppModel.backupPathKey) private var backupPath = ""
     @AppStorage(AppModel.eveningEnabledKey) private var eveningOn = true
     @AppStorage(AppModel.eveningHourKey) private var eveningHour = 18
     @AppStorage(AppModel.eveningMinuteKey) private var eveningMinute = 0
@@ -133,6 +134,20 @@ struct SettingsView: View {
             row("Focus timer") {
                 Segments(options: [15, 25, 45, 50, 90], selection: $focusMinutes) { "\($0) min" }
             }
+            Hairline().padding(.vertical, Theme.Space.s)
+            SectionLabel(title: "Backups").padding(.horizontal, Theme.Space.l).frame(height: Theme.Size.row)
+            row("Location") {
+                Text((backupPath.isEmpty ? model.backupDirectory.path : backupPath).replacingOccurrences(of: NSHomeDirectory(), with: "~"))
+                    .foregroundStyle(Theme.Palette.textSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Button("Change…") { model.chooseBackupFolder() }.buttonStyle(.ghost)
+                Button("Show") { NSWorkspace.shared.open(model.backupDirectory) }.buttonStyle(.ghost)
+            }
+            Text("A backup is saved once a day; the newest 7 are kept. File > Export and Import for manual copies.")
+                .font(Theme.Fonts.secondary)
+                .foregroundStyle(Theme.Palette.textTertiary)
+                .padding(.horizontal, Theme.Space.l)
             Hairline().padding(.vertical, Theme.Space.s)
             SectionLabel(title: "Permissions").padding(.horizontal, Theme.Space.l).frame(height: Theme.Size.row)
             row("Calendar") {

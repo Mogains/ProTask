@@ -25,6 +25,23 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
 
     private var center: UNUserNotificationCenter { .current() }
 
+    /// Off for debug runs on a throwaway database, so sample data never schedules real notifications.
+    var schedulingEnabled: Bool = {
+        #if DEBUG
+        return ProcessInfo.processInfo.environment["TOP3_STORE_PATH"] == nil
+        #else
+        return true
+        #endif
+    }()
+
+    /// Removes pending/delivered notifications that no longer belong to anything (e.g. deleted tasks).
+    func removeOrphans(keep: (String) -> Bool) async {
+        let pending = await center.pendingNotificationRequests().map(\.identifier).filter { !keep($0) }
+        center.removePendingNotificationRequests(withIdentifiers: pending)
+        let delivered = await center.deliveredNotifications().map(\.request.identifier).filter { !keep($0) }
+        center.removeDeliveredNotifications(withIdentifiers: delivered)
+    }
+
     /// Must run before the app finishes launching so actions on a closed app are delivered.
     func configure() {
         center.delegate = self
@@ -49,6 +66,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func schedule(id: UUID, title: String, at date: Date) {
+        guard schedulingEnabled else { return }
         let content = UNMutableNotificationContent()
         content.title = "Parking Lot"
         content.body = title
@@ -66,6 +84,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
 
     /// A notification at a fixed time every day.
     func scheduleDaily(identifier: String, title: String, body: String, hour: Int, minute: Int) {
+        guard schedulingEnabled else { return }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
@@ -77,6 +96,7 @@ final class NotificationService: NSObject, UNUserNotificationCenterDelegate {
 
     /// A one-off notification at a date (or after a delay).
     func scheduleOnce(identifier: String, title: String, body: String, at date: Date, category: String = generalCategory) {
+        guard schedulingEnabled else { return }
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body

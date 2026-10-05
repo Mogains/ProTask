@@ -101,12 +101,17 @@ final class AppModel {
             fatalError("Could not open the ProTask database: \(error)")
         }
         today = DayKey.key(resetHour: Self.savedResetHour())
-        for s in (try? context.fetch(FetchDescriptor<ListSetting>())) ?? [] {
-            if let l = ListKind(rawValue: s.listRaw) { autoSort[l] = s.autoSort }
-        }
+        reloadListSettings()
         notifications.extraCategories = [Self.followUpCategory]
         notifications.onAction = { [weak self] id, action in self?.handleIdeaAction(id: id, action: action) }
         notifications.onOther = { [weak self] identifier, action in self?.handleNotification(identifier, action: action) }
+    }
+
+    func reloadListSettings() {
+        autoSort = [:]
+        for s in (try? context.fetch(FetchDescriptor<ListSetting>())) ?? [] {
+            if let l = ListKind(rawValue: s.listRaw) { autoSort[l] = s.autoSort }
+        }
     }
 
     // MARK: Launch and day rollover
@@ -118,6 +123,7 @@ final class AppModel {
         applyAppearance()
         resumeFocus()
         writeWidgetSnapshot()
+        autoBackupIfNeeded()
         #if DEBUG
         let snapshotting = ProcessInfo.processInfo.environment["TOP3_SNAPSHOT_DIR"] != nil
         #else
@@ -156,6 +162,7 @@ final class AppModel {
             runMorningReset()
             syncAllEvents()
             checkPlanning()
+            autoBackupIfNeeded()
         }
     }
 
@@ -544,8 +551,15 @@ final class AppModel {
         }
     }
 
-    /// Re-creates reminders that should still be pending (for example after reinstalling).
+    /// Re-creates reminders that should still be pending (for example after reinstalling),
+    /// and removes ones whose task no longer exists.
     private func reconcileReminders() async {
+        let ids = Set(allTasks().map(\.id.uuidString))
+        await notifications.removeOrphans { identifier in
+            if let uuid = UUID(uuidString: identifier) { return ids.contains(uuid.uuidString) }
+            if identifier.hasPrefix(Self.followUpPrefix) { return ids.contains(String(identifier.dropFirst(Self.followUpPrefix.count))) }
+            return true
+        }
         let pending = await notifications.pendingIDs()
         for t in allTasks() where t.isIdea {
             if let at = t.remindAt, at > Date(), !pending.contains(t.id.uuidString) {
@@ -649,6 +663,24 @@ final class AppModel {
             if let tiff = r.nsImage?.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
                 try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: dir).appending(path: "menubar.png"))
             }
+        }
+        if env["TOP3_ROUNDTRIP"] != nil {
+            let before = makeBackup()
+            restore(try! BackupFile.decode(before.encoded()))
+            let after = makeBackup()
+            func canonical(_ f: BackupFile) -> Data? {
+                var f = f
+                f.exportedAt = .distantPast
+                f.tasks.sort { $0.id.uuidString < $1.id.uuidString }
+                f.dayLogs.sort { $0.day < $1.day }
+                f.listSettings.sort { $0.listRaw < $1.listRaw }
+                return try? f.encoded()
+            }
+            let same = canonical(before) == canonical(after)
+            try? before.encoded().write(to: URL(fileURLWithPath: dir).appending(path: "before.json"))
+            try? after.encoded().write(to: URL(fileURLWithPath: dir).appending(path: "after.json"))
+            print("ROUNDTRIP tasks=\(before.tasks.count) logs=\(before.dayLogs.count) sessions=\(before.focusSessions.count) identical=\(same)")
+            try? MarkdownExport.render(after.tasks).write(to: URL(fileURLWithPath: dir).appending(path: "export.md"), atomically: true, encoding: .utf8)
         }
         let shots: [(String, SidebarSection)] = [("today", .today), ("haveto", .list(.haveTo)), ("parking", .list(.parkingLot)),
                                                   ("done", .done), ("calendar", .calendar)]

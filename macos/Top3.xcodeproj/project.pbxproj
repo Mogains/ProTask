@@ -59,11 +59,14 @@
 		96B0A4270E4352A90D119521 /* AppModel+Waiting.swift in Sources */ = {isa = PBXBuildFile; fileRef = F57BCA430673FA1B07730160 /* AppModel+Waiting.swift */; };
 		98D35403941B8890E4B978FD /* FreeTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687954DCF8098A5D638E806C /* FreeTime.swift */; };
 		9ABE93CCFF5C53568E38484F /* AppModel+Focus.swift in Sources */ = {isa = PBXBuildFile; fileRef = FDD3C06EC2FDC44060CC1EE9 /* AppModel+Focus.swift */; };
+		9BE6D22F46BD1B79EA538405 /* BackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ABA2E3EC2AAC8C96F3E6D9F /* BackupTests.swift */; };
 		A1E27C7604C0741CC29378D2 /* Icon.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31F4076F12952256EAE76C7 /* Icon.swift */; };
+		A21FEC7315FADF15FC2E87E6 /* AppModel+Backup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 372A116BE3E8E52945FC5157 /* AppModel+Backup.swift */; };
 		A29C4A9B588EDE51823AB377 /* SidebarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9050594BB382F982B32C73E2 /* SidebarView.swift */; };
 		A31DA23FDDBA5E3260E9CD0D /* CommandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE826193A2219D9C73D30093 /* CommandPalette.swift */; };
 		A35D68D0261A6B6A44B0D692 /* WeeklyStats.swift in Sources */ = {isa = PBXBuildFile; fileRef = 77476DF1AC8401DF54640973 /* WeeklyStats.swift */; };
 		A838C81DEB6968BF944307F4 /* TagViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = D01CB6AB55D9ACE652229C11 /* TagViews.swift */; };
+		A89EF0C2B17F95214672B2CD /* Backup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A727AC09102D36491ECEFD /* Backup.swift */; };
 		AB775CB4E0C183367863CA9A /* FreeTime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687954DCF8098A5D638E806C /* FreeTime.swift */; };
 		AD7AB893AFA228C1791BB536 /* PlanningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33E31566E5C38418501DD0E8 /* PlanningView.swift */; };
 		ADC18DFE0A5C2CE97EF92F93 /* Inter-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6F8ACF16BE83B938C3899CA4 /* Inter-Regular.ttf */; };
@@ -77,6 +80,7 @@
 		D14D8DA817BA01FE0B83A1BD /* CalendarService.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE2FAE230C927133751DCD11 /* CalendarService.swift */; };
 		D25C0CA5C6808D284E65E0FB /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C12E3932F6E473346AEFE460 /* AppModel.swift */; };
 		D5A8F803CF865AB72481715B /* Inter-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 6F8ACF16BE83B938C3899CA4 /* Inter-Regular.ttf */; };
+		DC776016B00D158478EB81E5 /* Backup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66A727AC09102D36491ECEFD /* Backup.swift */; };
 		E01ED477BD6AB009F6E1E038 /* Inter-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = F83350B61CB921A518ECE286 /* Inter-Medium.ttf */; };
 		E275B6075D6EDAA7008AE803 /* Recurrence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15F100993BE89CA134E96761 /* Recurrence.swift */; };
 		E3E36F5582C6265A3256067E /* CaptureRouting.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9DC116F8CC2F0A7DE73643 /* CaptureRouting.swift */; };
@@ -131,6 +135,7 @@
 		3179DEE590E0C1215405F4D0 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
 		33E31566E5C38418501DD0E8 /* PlanningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanningView.swift; sourceTree = "<group>"; };
 		3407B071D124B29861AE7873 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		372A116BE3E8E52945FC5157 /* AppModel+Backup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Backup.swift"; sourceTree = "<group>"; };
 		372CB38E939A60BD0217F899 /* CalendarViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarViews.swift; sourceTree = "<group>"; };
 		3810521CD447F0D213DE613E /* Rollover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rollover.swift; sourceTree = "<group>"; };
 		50495CA6B1CE425EF84D49DA /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
@@ -140,6 +145,7 @@
 		5EBDBFA3A937B6AEDB31382F /* MenuBarQuickAdd.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarQuickAdd.swift; sourceTree = "<group>"; };
 		62DD1F32C7B7EFF0371CFA30 /* ParkingLotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParkingLotView.swift; sourceTree = "<group>"; };
 		63CC9D51A8DE495D8A560E87 /* TaskColumn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskColumn.swift; sourceTree = "<group>"; };
+		66A727AC09102D36491ECEFD /* Backup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Backup.swift; sourceTree = "<group>"; };
 		680C7951847F79364E91263D /* EventPlanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventPlanner.swift; sourceTree = "<group>"; };
 		687954DCF8098A5D638E806C /* FreeTime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreeTime.swift; sourceTree = "<group>"; };
 		6F8ACF16BE83B938C3899CA4 /* Inter-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Inter-Regular.ttf"; sourceTree = "<group>"; };
@@ -158,6 +164,7 @@
 		92F6DE29BD9D40D5F3377682 /* HotKeyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotKeyService.swift; sourceTree = "<group>"; };
 		935598E085DB4D0F2E72DA29 /* Fuzzy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Fuzzy.swift; sourceTree = "<group>"; };
 		96C4D4AAAF0AC4CC43A0CA9E /* TaskRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskRow.swift; sourceTree = "<group>"; };
+		9ABA2E3EC2AAC8C96F3E6D9F /* BackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackupTests.swift; sourceTree = "<group>"; };
 		9CE4BCB8EBD44AAFB5D28533 /* RecurrenceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecurrenceTests.swift; sourceTree = "<group>"; };
 		9FFA3F51BEAFA7017DC57E81 /* TaskSorting.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskSorting.swift; sourceTree = "<group>"; };
 		A1630C17BBE54613F434270E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -237,6 +244,7 @@
 			isa = PBXGroup;
 			children = (
 				C12E3932F6E473346AEFE460 /* AppModel.swift */,
+				372A116BE3E8E52945FC5157 /* AppModel+Backup.swift */,
 				FDD3C06EC2FDC44060CC1EE9 /* AppModel+Focus.swift */,
 				703DB97F6EF6C79B6C91DEA9 /* AppModel+Palette.swift */,
 				19416EBFD505EDD1ABF664CF /* AppModel+Rhythm.swift */,
@@ -283,6 +291,7 @@
 		88BA1456E1932742688884BE /* Logic */ = {
 			isa = PBXGroup;
 			children = (
+				66A727AC09102D36491ECEFD /* Backup.swift */,
 				0D9DC116F8CC2F0A7DE73643 /* CaptureRouting.swift */,
 				0AAA84232A6F6CADCA08B610 /* DailyStats.swift */,
 				142EDF6C71EE21D86954EE7D /* DayKey.swift */,
@@ -313,6 +322,7 @@
 		BE38A2B62E59D41FFA2864EE /* Top3Tests */ = {
 			isa = PBXGroup;
 			children = (
+				9ABA2E3EC2AAC8C96F3E6D9F /* BackupTests.swift */,
 				76487C84E9429DE2B94AC26B /* DayAndCalendarTests.swift */,
 				9CE4BCB8EBD44AAFB5D28533 /* RecurrenceTests.swift */,
 				6FCF98A195B66C2135DBEDA4 /* RolloverTests.swift */,
@@ -489,6 +499,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				DC776016B00D158478EB81E5 /* Backup.swift in Sources */,
+				9BE6D22F46BD1B79EA538405 /* BackupTests.swift in Sources */,
 				E5839E7CEDC62113AF9B6182 /* CaptureRouting.swift in Sources */,
 				D0D794967F39FEABD0005B19 /* DailyStats.swift in Sources */,
 				EBB77B21139E35FFE1225830 /* DayAndCalendarTests.swift in Sources */,
@@ -516,11 +528,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A21FEC7315FADF15FC2E87E6 /* AppModel+Backup.swift in Sources */,
 				9ABE93CCFF5C53568E38484F /* AppModel+Focus.swift in Sources */,
 				521337CBAFD905E7AAE56F77 /* AppModel+Palette.swift in Sources */,
 				2F0EED5CDE23233A018F8FE2 /* AppModel+Rhythm.swift in Sources */,
 				96B0A4270E4352A90D119521 /* AppModel+Waiting.swift in Sources */,
 				D25C0CA5C6808D284E65E0FB /* AppModel.swift in Sources */,
+				A89EF0C2B17F95214672B2CD /* Backup.swift in Sources */,
 				D14D8DA817BA01FE0B83A1BD /* CalendarService.swift in Sources */,
 				3E876D6D20042D2E6AB7DA64 /* CalendarViews.swift in Sources */,
 				E3E36F5582C6265A3256067E /* CaptureRouting.swift in Sources */,

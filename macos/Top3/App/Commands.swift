@@ -8,6 +8,13 @@ struct Top3Commands: Commands {
             WindowAction("New Task", key: "n", modifiers: .command) { model.newTask() }
             WindowAction("Quick Add to Parking Lot", key: "p", modifiers: [.command, .shift]) { model.showQuickPark = true }
         }
+        CommandGroup(replacing: .importExport) {
+            Button("Export as JSON…") { model.exportJSON() }
+            Button("Export as Markdown…") { model.exportMarkdown() }
+            Divider()
+            Button("Import from JSON Backup…") { model.importJSON() }
+            Button("Back Up Now") { model.backUpNow() }
+        }
         CommandMenu("Task") {
             ForEach(Top3Planner.slots, id: \.self) { n in
                 Button("Add to Top 3, Slot \(n)") { model.assignSelected(to: n) }
