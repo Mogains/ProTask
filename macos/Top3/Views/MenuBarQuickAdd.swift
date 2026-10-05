@@ -75,6 +75,10 @@ struct SettingsView: View {
                     .controlSize(.mini)
                     .labelsHidden()
             }
+            row("Quick add") {
+                HotKeyRecorder()
+                Text("opens from anywhere").foregroundStyle(Theme.Palette.textTertiary)
+            }
             row("New day starts") {
                 Menu(hourLabel(resetHour)) {
                     ForEach(0..<9) { h in Button(hourLabel(h)) { resetHour = h } }

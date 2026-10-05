@@ -51,3 +51,14 @@ final class Top3PlannerTests: XCTestCase {
         XCTAssertEqual(Top3Planner.plan(occupants: [], taskID: d, requested: 4), .invalidSlot)
     }
 }
+
+final class CaptureRoutingTests: XCTestCase {
+    func testPrefixesPickTheList() {
+        XCTAssertEqual(CaptureRouting.route("buy milk").list, .haveTo)
+        XCTAssertEqual(CaptureRouting.route("~ read a novel").list, .niceTo)
+        XCTAssertEqual(CaptureRouting.route("~ read a novel").text, "read a novel")
+        XCTAssertEqual(CaptureRouting.route("?idea").list, .parkingLot)
+        XCTAssertEqual(CaptureRouting.route("?idea").text, "idea")
+        XCTAssertEqual(CaptureRouting.route("  ~x").list, .niceTo)
+    }
+}

@@ -90,6 +90,8 @@ final class AppModel {
 
     func onLaunch() async {
         runMorningReset()
+        HotKeyService.shared.onPress = { QuickCaptureController.shared.toggle() }
+        HotKeyService.shared.register(HotKey.saved)
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.checkDay()
@@ -364,6 +366,19 @@ final class AppModel {
         let complete = pins.count == 3 && pins.allSatisfy(\.isCompleted)
         let log = dayLog(today)
         if log.top3Complete != complete { log.top3Complete = complete }
+    }
+
+    // MARK: Quick capture
+
+    /// Saves text from a quick-add field, routed by its prefix ("~" Nice to do, "?" Parking Lot).
+    @discardableResult
+    func capture(_ raw: String) -> Bool {
+        let route = CaptureRouting.route(raw)
+        guard !route.text.isEmpty else { return false }
+        if route.list == .parkingLot { return addIdea(route.text) }
+        guard addTask(TaskDraft(title: route.text, list: route.list)) != nil else { return false }
+        showToast("Added to \(route.list.title).")
+        return true
     }
 
     // MARK: Parking Lot
