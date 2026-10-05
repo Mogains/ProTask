@@ -48,6 +48,8 @@ final class AppModel {
     var editor: EditorRequest?
     var showQuickPark = false
     var showPalette = false
+    var showPlanning = false
+    var showWrapUp = false
     var toast: ToastMessage?
     var celebrating = false
     private(set) var today: String
@@ -95,6 +97,12 @@ final class AppModel {
         HotKeyService.shared.onPress = { QuickCaptureController.shared.toggle() }
         HotKeyService.shared.register(HotKey.saved)
         applyAppearance()
+        #if DEBUG
+        let snapshotting = ProcessInfo.processInfo.environment["TOP3_SNAPSHOT_DIR"] != nil
+        #else
+        let snapshotting = false
+        #endif
+        if !snapshotting { checkPlanning() }
         timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 self?.checkDay()
@@ -124,19 +132,46 @@ final class AppModel {
             today = key
             runMorningReset()
             syncAllEvents()
+            checkPlanning()
         }
     }
 
     /// Unfinished picks from an earlier day go back to their list (they never left it); finished ones go to Done.
+    /// Unfinished ones are remembered so morning planning can offer them again.
     func runMorningReset() {
-        let stale = allTasks().filter { $0.topSlot != nil && $0.topDay != today }
-        guard !stale.isEmpty else { return }
-        for t in stale {
+        let all = allTasks()
+        let pins = all.filter { $0.topSlot != nil }.map { Rollover.Pin(id: $0.id, topDay: $0.topDay, isCompleted: $0.isCompleted) }
+        let result = Rollover.plan(pins: pins, today: today)
+        guard !result.unpin.isEmpty else { return }
+        for t in all where result.unpin.contains(t.id) {
             t.topSlot = nil
             t.topDay = nil
             calendar.sync(t, today: today)
         }
+        addRolledOver(result.rolledOver, to: today)
         save()
+    }
+
+    func addRolledOver(_ ids: [UUID], to day: String) {
+        guard !ids.isEmpty else { return }
+        let log = dayLog(day)
+        var existing = Rollover.decode(log.rolledOverRaw)
+        for id in ids where !existing.contains(id) { existing.append(id) }
+        log.rolledOverRaw = Rollover.encode(existing)
+    }
+
+    /// Morning planning shows once per day (after the reset hour) unless turned off or already done.
+    func checkPlanning() {
+        guard UserDefaults.standard.object(forKey: "morningPlanning") as? Bool ?? true else { return }
+        if !dayLog(today).planningDone { showPlanning = true }
+    }
+
+    func finishPlanning() {
+        dayLog(today).planningDone = true
+        dayLog(today).promptDismissed = true
+        save()
+        withAnimation(Theme.Motion.list) { showPlanning = false }
+        section = .today
     }
 
     // MARK: Queries
@@ -399,7 +434,9 @@ final class AppModel {
     }
 
     /// Hook for features that add palette actions (focus timer, review…).
-    func extraPaletteActions() -> [PaletteItem] { [] }
+    func extraPaletteActions() -> [PaletteItem] {
+        [PaletteItem(id: "plan", title: "Plan my day", kind: .action, icon: .today) { [self] in showPlanning = true }]
+    }
 
     // MARK: Quick capture
 
@@ -551,6 +588,9 @@ final class AppModel {
             action()
             try? await Task.sleep(for: .seconds(0.8))
             captureWindow(as: name, in: dir) {}
+            showPlanning = false
+            showWrapUp = false
+            try? await Task.sleep(for: .seconds(0.3))
         }
         if env["TOP3_SNAPSHOT_PIN4"] != nil, let extra = allTasks().first(where: { $0.title == "Read two chapters" }) {
             section = .today
@@ -566,7 +606,9 @@ final class AppModel {
     }
 
     /// Extra states to capture in debug snapshots (sheets, overlays added by later features).
-    func debugExtraShots() -> [(String, () -> Void)] { [] }
+    func debugExtraShots() -> [(String, () -> Void)] {
+        [("planning", { self.showPlanning = true })]
+    }
 
     private func captureWindow(as name: String, in dir: String, before: () -> Void) {
         before()
@@ -607,6 +649,7 @@ final class AppModel {
         rent.completedAt = now.addingTimeInterval(-1800)
         for idea in ["Weekly review template", "Ask about the standing desk budget"] { addIdea(idea) }
         for d in 1...4 { dayLog(DayKey.adding(-d, to: today)).top3Complete = true }
+        if let passport = allTasks().first(where: { $0.title == "Renew passport" }) { addRolledOver([passport.id], to: today) }
         refreshDayLog()
         selectedTaskID = nil
         save()

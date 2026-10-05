@@ -49,6 +49,12 @@ struct ContentView: View {
             QuickParkSheet().presentationBackground(Theme.Palette.surface)
         }
         .overlay {
+            if model.showPlanning {
+                PlanningView(tasks: tasks).transition(.opacity)
+            }
+        }
+        .animation(Theme.Motion.list, value: model.showPlanning)
+        .overlay {
             if model.showPalette {
                 CommandPalette(tasks: tasks).transition(.opacity)
             }

@@ -85,6 +85,12 @@ final class DayLog {
     @Attribute(.unique) var day: String
     var top3Complete: Bool = false
     var promptDismissed: Bool = false
+    /// Morning planning was finished or skipped for this day.
+    var planningDone: Bool = false
+    /// The day was closed from the evening wrap-up.
+    var dayClosed: Bool = false
+    /// Comma-separated ids of unfinished picks that rolled over into this day.
+    var rolledOverRaw: String = ""
 
     init(day: String) {
         self.day = day
