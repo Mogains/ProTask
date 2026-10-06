@@ -6,6 +6,7 @@ enum IconName: String, CaseIterable {
     case today, haveTo = "have-to", niceTo = "nice-to", waiting, parking, calendar, done, settings
     case sidebar, search, add, autoSort = "auto-sort", manual, panel, quickAdd = "quick-add", more, delete, send, later, close
     case `repeat`, drag, due, priority1 = "priority-1", priority2 = "priority-2", priority3 = "priority-3", notes, idea
+    case chat, copy, paste, popout, reload
     case mark
 
     var assetName: String { "icon-\(rawValue)" }

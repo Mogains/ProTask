@@ -7,6 +7,8 @@ struct ContentView: View {
     @Query(animation: Theme.Motion.list) private var tasks: [TaskItem]
     @AppStorage("showCalendarPanel") private var showPanel = true
     @AppStorage("showSidebar") private var showSidebar = true
+    @AppStorage(AppModel.chatPanelKey) private var showChat = false
+    @AppStorage(AppModel.chatPanelWidthKey) private var chatWidth = Double(Theme.Size.chatPanelWidth)
 
     var body: some View {
         @Bindable var model = model
@@ -35,7 +37,18 @@ struct ContentView: View {
                     .background(Theme.Palette.surface)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             }
+
+            if showChat {
+                Hairline(vertical: true)
+                    .overlay(alignment: .leading) { PanelResizeHandle(width: $chatWidth).offset(x: -Theme.Size.resizeHandle / 2) }
+                ChatPanel()
+                    .frame(width: chatWidth)
+                    .frame(maxHeight: .infinity)
+                    .background(Theme.Palette.surface)
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
+            }
         }
+        .animation(Theme.Motion.list, value: showChat)
         .ignoresSafeArea()
         .background(WindowConfigurator())
         .background(Theme.Palette.background)
@@ -114,6 +127,9 @@ struct ContentView: View {
                 IconButton(icon: .panel, help: showPanel ? "Hide today's calendar" : "Show today's calendar",
                            active: showPanel) {
                     withAnimation(Theme.Motion.list) { showPanel.toggle() }
+                }
+                IconButton(icon: .chat, help: showChat ? "Hide AI chat (⌘J)" : "Show AI chat (⌘J)", active: showChat) {
+                    model.toggleChatPanel()
                 }
             }
         }

@@ -33,6 +33,7 @@ struct Top3Commands: Commands {
             WindowAction("Toggle Sidebar", key: "s", modifiers: [.command, .control]) {
                 withAnimation(Theme.Motion.list) { model.toggleSidebar() }
             }
+            WindowAction("Toggle AI Chat", key: "j", modifiers: .command) { model.toggleChatPanel() }
             Divider()
             Button("Today") { model.section = .today }.keyboardShortcut("0", modifiers: [.command, .option])
             ForEach(Array(ListKind.allCases.enumerated()), id: \.element) { i, l in

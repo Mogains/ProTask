@@ -92,6 +92,14 @@ enum Theme {
         /// Clearance for the window's traffic lights when the sidebar is hidden.
         static let trafficLights: CGFloat = 72
         static let capturePanelHeight: CGFloat = 112
+        /// AI chat panel: default width, and the range its drag handle allows.
+        static let chatPanelWidth: CGFloat = 380
+        static let chatPanelMinWidth: CGFloat = 300
+        static let chatPanelMaxWidth: CGFloat = 720
+        static let resizeHandle: CGFloat = 6
+        static let chatWindowMinWidth: CGFloat = 360
+        static let chatWindowMinHeight: CGFloat = 420
+        static let customURLField: CGFloat = 220
     }
 
     // MARK: Type

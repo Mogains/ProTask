@@ -23,6 +23,14 @@ struct ProTaskApp: App {
         .defaultSize(width: 1180, height: 740)
         .commands { Top3Commands(model: model) }
 
+        Window("AI Chat", id: "chat") {
+            ChatWindowContent()
+                .environment(model)
+                .frame(minWidth: Theme.Size.chatWindowMinWidth, minHeight: Theme.Size.chatWindowMinHeight)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 520, height: 720)
+
         Settings {
             SettingsView()
                 .environment(model)

@@ -11,6 +11,7 @@ def line(x1, y1, x2, y2): return f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}"
 def rect(x, y, w, h, r=1): return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="{r}" {S}/>'
 def poly(*pts): return f'<polyline points="{" ".join(f"{x},{y}" for x, y in pts)}" {S}/>'
 def circle(cx, cy, r): return f'<circle cx="{cx}" cy="{cy}" r="{r}" {S}/>'
+def path(d): return f'<path d="{d}" {S}/>'
 def dot(x, y, s=1.5): return f'<rect x="{x}" y="{y}" width="{s}" height="{s}" fill="#000"/>'
 BOX = rect(2.5, 2.5, 11, 11)
 
@@ -47,6 +48,13 @@ ICONS = {
     "waiting":    BOX + line(5.5, 6, 10.5, 6) + line(5.5, 10, 10.5, 10) + poly((7, 6), (8, 8), (9, 6)),
     "repeat":     poly((3, 7.5), (3, 4.5), (12.5, 4.5)) + poly((10.5, 2.5), (12.5, 4.5), (10.5, 6.5))
                   + poly((13, 8.5), (13, 11.5), (3.5, 11.5)) + poly((5.5, 9.5), (3.5, 11.5), (5.5, 13.5)),
+    # AI chat panel
+    "chat":       rect(2.5, 3, 11, 8) + poly((5.5, 11), (5.5, 13.5), (8.5, 11)),
+    "copy":       rect(5.5, 5.5, 8, 8) + poly((10.5, 3.5), (10.5, 2.5), (2.5, 2.5), (2.5, 10.5), (3.5, 10.5)),
+    "paste":      rect(3, 3.5, 10, 10) + rect(6, 2, 4, 3, 0.5) + line(5.5, 8, 10.5, 8) + line(5.5, 10.5, 9, 10.5),
+    "popout":     poly((7, 2.5), (2.5, 2.5), (2.5, 13.5), (13.5, 13.5), (13.5, 9)) + line(8, 8, 13.5, 2.5)
+                  + poly((9.5, 2.5), (13.5, 2.5), (13.5, 6.5)),
+    "reload":     path("M13 8.5A5 5 0 1 1 11.5 4.5") + poly((12, 1.5), (12, 5), (8.5, 5)),
     # Brand mark (menu bar)
     "mark":       BOX + dot(9.5, 4, 2.5),
 }
