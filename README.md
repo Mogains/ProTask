@@ -14,7 +14,7 @@ Requires macOS 14 (Sonoma) or later.
 - **Two lists.** *Have to do* and *Nice to do*, sorted by due date and priority, or dragged into your own order.
 - **Parking Lot.** Jot down an idea and keep working. An hour later a notification asks where it belongs.
 - **Quick add from anywhere.** Press <kbd>⌥</kbd> <kbd>Space</kbd> and type something like `email prof friday 3pm !!! 30m #school`. ProTask picks up the date, priority, time estimate and tag.
-- **Calendar sync.** Tasks with due dates appear in a "ProTask" calendar, so they show up wherever Calendar.app does: iCloud, Google, Outlook.
+- **Two-way calendar sync.** Tasks with due dates and your Top 3 appear in a "ProTask" calendar, wherever Calendar.app shows it: iCloud, Google, Outlook. Move or rename an event there and the task follows. Delete one and the task stays, flagged on Today.
 - **Daily rhythm.** A morning planning screen, an evening wrap-up and a weekly review.
 - **Focus timer.** 25 or 50 minutes, or your own length, on any task.
 - **Waiting On.** Track things you've handed off and get a nudge to follow up.

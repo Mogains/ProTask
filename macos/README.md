@@ -127,14 +127,26 @@ Click a task to select it. Double-click to edit. Right-click for every action.
 - The notification's options are **Send to Have to do**, **Send to Nice to do**, **Keep in Parking Lot** (reminds again in an hour) and **Delete**. The same actions are on each idea's row and context menu. You can also drag an idea onto a list in the sidebar or on the Today screen.
 - The menu bar icon (a checklist) lets you park an idea without opening the window. Turn it off in Settings.
 
-**Calendar (one way, app to calendar)**
+**Calendar (two way, with the "ProTask" calendar only)**
 - Due date and time: a timed event lasting the estimate, or 30 minutes.
 - Due date only: an all-day event.
-- Today's Top 3 pick without a due date: an all-day event today.
-- Completing a task adds a "✓" to the event title. Deleting a task removes its event. Edits made in Calendar.app are not read back.
+- Today's Top 3 pick that is due on another day (or has no due date): an extra all-day event today. Unpinning removes only that event.
+- An open recurring task owns a repeating event. Finishing an occurrence turns it into a single event and the next occurrence gets the series.
+- Completing a task adds a "✓" to its event titles. Deleting a task removes all of its events.
+- **Edits in Calendar.app come back.** Changing an event's title, date, time or length updates the task, as soon as Calendar saves it (and at launch for edits made while ProTask was closed).
+- **Deleting an event keeps the task.** It shows "off calendar" and is listed on Today under *Removed from your calendar*. **Put back**, a new due date, or pinning it restores the event.
+- **Conflicts.** If a task and its event both changed since the last sync, the newer edit wins and the other version is kept in a sync history (newest 200). ProTask checks for a Calendar edit before every change it writes, so it never overwrites one blindly.
+- Moving a Top 3 event to another day moves it back, because it follows the Top 3 day. Its title change is kept.
+- Only events in the "ProTask" calendar are ever read for sync, created, changed or removed.
 - The "ProTask" calendar is created in your default calendar account. Some accounts, including Google, don't let apps create calendars. In that case ProTask falls back to iCloud or "On My Mac". You can also create a calendar named "ProTask" yourself in Calendar.app, and the app will use it.
 - If you used the app when it was called Top 3, its "Top 3" calendar is renamed to "ProTask" in place, so existing events carry over.
 - The side panel lists today's events from every calendar except "ProTask", plus free blocks between 8 AM and 8 PM.
+
+**Calendar limitations**
+- Editing or deleting a single occurrence of a repeating event in Calendar.app isn't read back. Edits to the whole series are.
+- Only the title, date, time and length come back. Event notes are overwritten by the task's notes.
+- The sync history is stored in the database, but there's no screen for it yet and backups don't include it.
+- If every linked event (three or more) disappears at once, ProTask assumes the calendar was replaced or hasn't loaded, and adds the events again instead of taking every task off the calendar.
 
 ## Widget note
 

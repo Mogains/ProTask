@@ -101,12 +101,18 @@ If connecting says Google didn't return a refresh token, remove "Top 3" at [myac
 - The **streak** counts consecutive days on which all three picks were completed. Today counts once you finish it; until then the streak runs through yesterday.
 - **Today %** is tasks completed today divided by today's workload, which is completed-today plus open tasks that are pinned or due today or earlier.
 
-**Calendar sync (one way, app → Google)**
+**Calendar sync (two way, with the "Top 3" calendar only)**
 - A task with a due date and time becomes a timed event lasting its estimate, or 30 minutes without one.
 - A task with only a due date becomes an all-day event on that date.
-- A Top 3 pick with no due date becomes an all-day event today, prefixed with ⭐.
-- Completing a task adds ✅ to the event title. Deleting a task deletes its event. Unpinning an undated task removes its event.
-- Sync runs in the background after each change, so the UI never waits for Google. Failures show a small "⚠ calendar" tag on the task and are retried on the next change.
+- A Top 3 pick that is due on another day (or has no due date) also gets an all-day ⭐ event today. Unpinning removes only that event.
+- Completing a task adds ✅ to its event titles. Deleting a task deletes all of its events.
+- Changes go to Google in the background after each edit, so the UI never waits. Failures show a small "⚠ calendar" tag on the task and are retried on the next change.
+- **Edits in Google Calendar come back.** Change an event's title, date, time or length and the task follows. The app checks every minute while it's open, and again when you return to the tab. It uses Google's incremental sync tokens, and if a token expires it does one full resync.
+- **Deleting an event keeps the task.** It's marked "off calendar" and listed on Today under *Removed from your calendar*. **Put back**, a new due date, or pinning it puts it back on the calendar.
+- **Conflicts.** If a task and its event were both changed since the last sync, the newer edit wins. The other version goes into a sync history, and the latest five changes are under *Recent sync changes* in the sidebar. Pushes use the event's etag, so an edit made in Google is never overwritten blindly.
+- Moving a ⭐ Top 3 event to another day moves it back, because it follows the Top 3 day. Its title change is kept.
+- If Google revokes access, sync pauses and the sidebar shows **Reconnect**.
+- Only the dedicated "Top 3" calendar is read or written. Your other calendars are only read for the sidebar's list of today's events.
 - The sidebar reads today's events from your **primary** calendar and lists free blocks between 8am and 8pm.
 
 **Keyboard shortcuts**
@@ -124,7 +130,7 @@ If connecting says Google didn't return a refresh token, remove "Top 3" at [myac
 npm run dev        # dev server
 npm run build      # production build
 npm start          # run the production build
-npm test           # vitest: sorting, Top 3 limit, calendar mapping, mocked sync
+npm test           # vitest: sorting, Top 3 limit, auth, calendar mapping, two-way sync against a fake Google
 npm run typecheck  # tsc
 npx prisma studio  # browse the database
 ```
@@ -167,7 +173,13 @@ tests/                    vitest tests
 - **No share links.** The app has no calendar feed or share URL. Calendar access goes through Google's API with your own OAuth client.
 - **Not built for the open internet.** It hasn't had a security audit and is meant for one person. If you expose it beyond your own devices, put it behind a VPN like Tailscale.
 
-## Limitations (v1)
+## Limitations
 
-- Sync is one way. Edits made in Google Calendar are not pulled back and are overwritten on the next change to that task.
-- Each task has one event. A pinned task that is due on another day keeps its due-date event.
+What is solved now: two-way sync, multiple events per task (due date and Top 3 day), password login, and tokens kept in the Keychain. Still not solved:
+
+- Calendar edits are only pulled while the app is open in a browser. Instant updates would need Google push notifications, which require a public HTTPS address.
+- Only the title, date, time and length come back from Google. Edits to an event's description are overwritten by the task's notes.
+- Deleting one of a task's events takes the whole task off the calendar, including its other event, until you put it back.
+- The sync history keeps the newest 200 changes and shows five. There's no one-click restore: copy the old version back by hand.
+- Conflict order depends on your computer's clock agreeing with Google's.
+- One user. There are no shared lists or accounts.
