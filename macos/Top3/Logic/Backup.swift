@@ -39,6 +39,8 @@ struct BackupFile: Codable, Equatable {
         var tagsRaw: String
         /// Calendar event links (newer backups). Older backups only have calendarEventID.
         var links: [LinkDTO]? = nil
+        /// Event deleted in Calendar (newer backups).
+        var unscheduled: Bool? = nil
     }
 
     struct LinkDTO: Codable, Equatable {

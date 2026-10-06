@@ -17,6 +17,22 @@ struct TodayView: View {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 if showPrompt { prompt }
                 Top3Block(pins: pins)
+                let offCalendar = tasks.filter { $0.unscheduled && !$0.isCompleted }
+                if !offCalendar.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        SectionLabel(title: "Removed from your calendar", detail: "\(offCalendar.count)")
+                        .padding(.leading, Theme.Space.s)
+                        .frame(height: Theme.Size.row)
+                        ForEach(offCalendar) { t in
+                            HStack(spacing: Theme.Space.s) {
+                                TaskRow(task: t, showDivider: t.id != offCalendar.last?.id, showHandle: false)
+                                Button("Put back") { withAnimation(Theme.Motion.standard) { model.putBackOnCalendar(t) } }
+                                    .buttonStyle(.ghost)
+                                    .help("Create its calendar event again")
+                            }
+                        }
+                    }
+                }
                 let followUps = tasks.filter { model.isFollowUpDue($0) }
                 if !followUps.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {

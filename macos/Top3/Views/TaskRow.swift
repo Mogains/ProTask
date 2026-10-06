@@ -158,6 +158,10 @@ struct RowMeta: View {
                 if let rule = task.recurrence {
                     Icon(.repeat, size: Theme.Size.dragHandle).help("Repeats: \(rule.summary)")
                 }
+                if task.unscheduled {
+                    Text("off calendar")
+                        .help("Its event was deleted in Calendar. Change the due date or choose Put Back on Calendar to restore it.")
+                }
                 if task.actualSeconds >= 60 {
                     let actual = Fmt.minutes(task.actualSeconds / 60) ?? ""
                     Text(task.estimateMinutes.flatMap(Fmt.minutes).map { "\(actual) / \($0)" } ?? "\(actual) spent")
@@ -181,6 +185,9 @@ struct TaskMenu: View {
 
     var body: some View {
         Button("Edit…") { model.edit(task) }
+        if task.unscheduled {
+            Button("Put Back on Calendar") { model.putBackOnCalendar(task) }
+        }
         if task.isWaiting && !task.isCompleted {
             Button("Mark Received") { model.receive(task) }
             Button("Snooze Follow-up 1 Day") { model.snoozeFollowUp(task) }

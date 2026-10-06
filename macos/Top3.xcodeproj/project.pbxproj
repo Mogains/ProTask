@@ -11,6 +11,7 @@
 		0A42EF1F12C7834DBF4A2925 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3407B071D124B29861AE7873 /* Assets.xcassets */; };
 		0C9D39EE310F2B7DF2BA1106 /* EventPlanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680C7951847F79364E91263D /* EventPlanner.swift */; };
 		111C429CE519092700E6F9F4 /* TaskParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3F24C9984A91AA705CD2276 /* TaskParserTests.swift */; };
+		1BA2774618BF83E6721322BD /* TwoWaySyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E76049A5573903959D555567 /* TwoWaySyncTests.swift */; };
 		1C9FE95244D1491FA5751707 /* Inter-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 83AAB60830FC78A07D27437F /* Inter-SemiBold.ttf */; };
 		1CEB5BECEA066DBCA3A2E238 /* ReviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7AE812386EB51F0D0B6CE7 /* ReviewView.swift */; };
 		25364B37E8EA5065EC2128C4 /* Inter-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = 2BF6B8A15B3234774A67D888 /* Inter-LICENSE.txt */; };
@@ -190,6 +191,7 @@
 		DDECFD0658108A0C8A8B908D /* FocusViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusViews.swift; sourceTree = "<group>"; };
 		DE80889841D04322683B5CAF /* WeeklyStatsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyStatsTests.swift; sourceTree = "<group>"; };
 		E70A9304FAF7AD5E53472120 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		E76049A5573903959D555567 /* TwoWaySyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwoWaySyncTests.swift; sourceTree = "<group>"; };
 		E9004A2DDB7D42E3755C12AA /* Commands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Commands.swift; sourceTree = "<group>"; };
 		ED5BC245FB055764199EAB1C /* DoneView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoneView.swift; sourceTree = "<group>"; };
 		EE826193A2219D9C73D30093 /* CommandPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPalette.swift; sourceTree = "<group>"; };
@@ -343,6 +345,7 @@
 				A3F24C9984A91AA705CD2276 /* TaskParserTests.swift */,
 				DD855ED1ABA21B3191780F7C /* TaskSortingTests.swift */,
 				74B40DBBC06C07FB2F1F5DE4 /* Top3PlannerTests.swift */,
+				E76049A5573903959D555567 /* TwoWaySyncTests.swift */,
 				DE80889841D04322683B5CAF /* WeeklyStatsTests.swift */,
 			);
 			path = Top3Tests;
@@ -537,6 +540,7 @@
 				43F547C2D5986CE53AB2CD48 /* TaskSortingTests.swift in Sources */,
 				F00ECAC8ED5A3F5D19E34353 /* Top3Planner.swift in Sources */,
 				56780D513D0C3F7C9EA0B43F /* Top3PlannerTests.swift in Sources */,
+				1BA2774618BF83E6721322BD /* TwoWaySyncTests.swift in Sources */,
 				927C392780A9F9FA5B2F095C /* WeeklyStats.swift in Sources */,
 				F544499F523CB3DE06169D5D /* WeeklyStatsTests.swift in Sources */,
 			);

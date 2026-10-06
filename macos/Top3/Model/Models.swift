@@ -41,6 +41,10 @@ final class TaskItem {
     var followUpDate: Date?
     /// Space-separated lowercase tags (no "#").
     var tagsRaw: String = ""
+    /// Its calendar event was deleted in Calendar. Shown on Today; no event is recreated until it's rescheduled.
+    var unscheduled: Bool = false
+    /// Last edit in ProTask to something its calendar events show. Decides two-way sync conflicts.
+    var modifiedAt: Date?
 
     init(title: String, list: ListKind, position: Double) {
         self.title = title
@@ -82,7 +86,7 @@ final class TaskItem {
     var eventInfo: EventTaskInfo {
         EventTaskInfo(title: title, notes: notes, dueDate: dueDate, hasDueTime: hasDueTime, priority: priority,
                       estimateMinutes: estimateMinutes, isCompleted: isCompleted, topSlot: topSlot, topDay: topDay,
-                      recurrence: recurrence)
+                      recurrence: recurrence, unscheduled: unscheduled)
     }
 
     var statInfo: StatTask {
@@ -167,5 +171,28 @@ final class EventLink {
 
     var state: LinkState {
         LinkState(kind: kind, contentHash: contentHash, remoteModifiedAt: remoteModifiedAt, lastSyncedAt: lastSyncedAt)
+    }
+}
+
+/// What two-way sync overwrote or removed, so nothing is lost silently. The newest 200 are kept.
+@Model
+final class SyncRecord {
+    var id: UUID = UUID()
+    var at: Date = Date()
+    var taskID: UUID?
+    var taskTitle: String = ""
+    /// "conflict" | "deleted-in-calendar" | "pinned-moved"
+    var reason: String = ""
+    /// "calendar" | "protask": whose version was kept
+    var winner: String?
+    /// The version that was not kept
+    var lost: String = ""
+
+    init(taskID: UUID?, taskTitle: String, reason: String, winner: String?, lost: String) {
+        self.taskID = taskID
+        self.taskTitle = taskTitle
+        self.reason = reason
+        self.winner = winner
+        self.lost = lost
     }
 }

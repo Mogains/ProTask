@@ -27,12 +27,17 @@ final class CalendarService {
     private(set) var todayEvents: [DayEvent] = []
     private(set) var lastError: String?
     @ObservationIgnored private var observer: NSObjectProtocol?
+    /// Called when the event store changes (an edit in Calendar.app, or one of our own saves).
+    @ObservationIgnored var onStoreChanged: (() -> Void)?
 
     var hasAccess: Bool { status == .fullAccess }
 
     init() {
         observer = NotificationCenter.default.addObserver(forName: .EKEventStoreChanged, object: store, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.loadToday() }
+            Task { @MainActor in
+                self?.loadToday()
+                self?.onStoreChanged?()
+            }
         }
     }
 
@@ -101,6 +106,10 @@ final class CalendarService {
     /// Brings a task's events (due or series, and pinned) in line with the task, one link per slot.
     func sync(_ task: TaskItem, today: String) {
         guard hasAccess, let calendar = top3Calendar() else { return }
+        // Never overwrite a Calendar edit blindly: settle any edit made there since the last sync first.
+        for link in task.links ?? [] {
+            if let e = event(for: link, in: calendar) { resolve(task, link, e, today: today) }
+        }
         let specs = task.isIdea ? [:] : EventPlanner.specs(for: task.eventInfo, today: today)
         var links: [LinkSlot: EventLink] = [:]
         var events: [LinkSlot: EKEvent] = [:]
@@ -129,6 +138,87 @@ final class CalendarService {
             }
         }
     }
+
+    // MARK: Pull (Calendar → tasks)
+
+    /// Applies edits made in Calendar to the linked tasks, only for events in the ProTask calendar.
+    /// Returns the tasks that changed or need their own version pushed; the caller syncs and saves them.
+    func pull(_ tasks: [TaskItem], today: String) -> [TaskItem] {
+        guard hasAccess, let calendar = top3Calendar() else { return [] }
+        let linked = tasks.flatMap { t in (t.links ?? []).map { (task: t, link: $0) } }
+        guard !linked.isEmpty else { return [] }
+        let found = linked.map { event(for: $0.link, in: calendar) }
+        let trustMissing = LinkSync.trustMissing(missing: found.filter { $0 == nil }.count, total: linked.count)
+        if !trustMissing {
+            lastError = "ProTask's calendar events are all missing. If the calendar was replaced, they'll be added again."
+        }
+        var changed: [UUID: TaskItem] = [:]
+        for (pair, event) in zip(linked, found) where event != nil || trustMissing {
+            if resolve(pair.task, pair.link, event, today: today) { changed[pair.task.id] = pair.task }
+        }
+        return Array(changed.values)
+    }
+
+    /// Settles one linked event as Calendar has it against its task, by the rule in `LinkSync.pull`.
+    /// Returns true when the task changed or its version should be pushed.
+    @discardableResult
+    private func resolve(_ task: TaskItem, _ link: EventLink, _ event: EKEvent?, today: String) -> Bool {
+        let local = task.isIdea ? nil : EventPlanner.specs(for: task.eventInfo, today: today)[link.kind.slot]
+        let remote = event.map(Self.remoteState)
+        let decision = LinkSync.pull(link: link.state, remote: remote, local: local, localModified: task.modifiedAt)
+        guard let remote, let event else {
+            if decision == .deleted {
+                // Keep the task: mark it unscheduled (shown on Today) and log what the calendar had.
+                log(task, "deleted-in-calendar", winner: nil, lost: local.map(Self.version) ?? "")
+                unlink(link, from: task)
+                task.unscheduled = true
+                return true
+            }
+            return false
+        }
+        switch decision {
+        case .unchanged, .deleted:
+            return false
+        case .converged:
+            agree(link, remote: remote, event: event)
+            return false
+        case .localWins:
+            // Keep ProTask's version; it is pushed next. The Calendar version goes to the history.
+            log(task, "conflict", winner: "protask", lost: Self.version(remote))
+            agree(link, remote: remote, event: event)
+            return true
+        case .pull, .remoteWins:
+            if decision == .remoteWins, let local { log(task, "conflict", winner: "calendar", lost: Self.version(local)) }
+            let pinDay = task.topSlot != nil && task.topDay == today ? DayKey.date(from: today) : nil
+            let patch = LinkSync.remotePatch(kind: link.kind, remote: remote, task: task.eventInfo, pinDay: pinDay)
+            if patch.pinnedMoved { log(task, "pinned-moved", winner: "protask", lost: Self.version(remote)) }
+            if let v = patch.title { task.title = v }
+            if let v = patch.dueDate { task.dueDate = v }
+            if let v = patch.hasDueTime { task.hasDueTime = v }
+            if let v = patch.estimateMinutes { task.estimateMinutes = v }
+            if patch.changesTask { task.unscheduled = false }
+            // Calendar's version is now the agreed one; whatever ProTask still wants different is pushed next.
+            agree(link, remote: remote, event: event)
+            return patch.changesTask || patch.pinnedMoved
+        }
+    }
+
+    private func agree(_ link: EventLink, remote: RemoteState, event: EKEvent) {
+        link.contentHash = remote.fingerprint
+        link.remoteModifiedAt = event.lastModifiedDate
+        link.lastSyncedAt = Date()
+    }
+
+    private func log(_ task: TaskItem, _ reason: String, winner: String?, lost: String) {
+        task.modelContext?.insert(SyncRecord(taskID: task.id, taskTitle: task.title, reason: reason, winner: winner, lost: lost))
+    }
+
+    static func remoteState(_ e: EKEvent) -> RemoteState {
+        RemoteState(title: e.title ?? "", start: e.startDate, end: e.endDate, isAllDay: e.isAllDay, lastModified: e.lastModifiedDate)
+    }
+
+    private static func version(_ r: RemoteState) -> String { LinkSync.version(title: r.title, start: r.start, isAllDay: r.isAllDay) }
+    private static func version(_ s: EventSpec) -> String { LinkSync.version(title: s.title, start: s.start, isAllDay: s.isAllDay) }
 
     /// Writes a spec to an event. Returns the saved event, or nil (and sets lastError) on failure.
     private func save(_ spec: EventSpec, into event: EKEvent, calendar: EKCalendar) -> EKEvent? {

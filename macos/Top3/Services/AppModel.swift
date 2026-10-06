@@ -81,6 +81,7 @@ final class AppModel {
     @ObservationIgnored private var widgetWork: DispatchWorkItem?
     @ObservationIgnored private var lastWidgetSnapshot: WidgetSnapshot?
     @ObservationIgnored private var activeObserver: NSObjectProtocol?
+    @ObservationIgnored private var pullWork: DispatchWorkItem?
 
     init() {
         let fm = FileManager.default
@@ -99,7 +100,7 @@ final class AppModel {
             ?? dir.appending(path: "Top3.store")
         let config = ModelConfiguration(url: storeURL)
         do {
-            container = try ModelContainer(for: TaskItem.self, ListSetting.self, DayLog.self, FocusSession.self, EventLink.self, configurations: config)
+            container = try ModelContainer(for: TaskItem.self, ListSetting.self, DayLog.self, FocusSession.self, EventLink.self, SyncRecord.self, configurations: config)
         } catch {
             // Only the error domain and code: the full error can include file paths and stored values.
             let ns = error as NSError
@@ -123,6 +124,7 @@ final class AppModel {
 
     func onLaunch() async {
         migrateLegacyEventLinks()
+        calendar.onStoreChanged = { [weak self] in self?.schedulePull() }
         runMorningReset()
         HotKeyService.shared.onPress = { QuickCaptureController.shared.toggle() }
         HotKeyService.shared.register(HotKey.saved)
@@ -280,7 +282,11 @@ final class AppModel {
 
     func update(_ t: TaskItem, with d: TaskDraft) {
         let oldList = t.list
+        let oldDue = (t.dueDate, t.hasDueTime)
         apply(d, to: t)
+        t.modifiedAt = Date()
+        // A new due date or time puts a task whose event was deleted in Calendar back on it.
+        if t.unscheduled && (t.dueDate != oldDue.0 || t.hasDueTime != oldDue.1) { t.unscheduled = false }
         if t.list != oldList {
             t.position = endPosition(of: t.list)
             if oldList == .parkingLot { notifications.cancel(id: t.id); t.remindAt = nil }
@@ -328,6 +334,7 @@ final class AppModel {
         let wasAllDone = allPinnedDone(in: allTasks())
         t.isCompleted = done
         t.completedAt = done ? Date() : nil
+        t.modifiedAt = Date()
         calendar.sync(t, today: today)
         if done { spawnNextOccurrence(of: t) }
         scheduleFollowUp(t)
@@ -391,7 +398,10 @@ final class AppModel {
             for (i, tid) in ids.enumerated() { byID[tid]?.position = Double(i + 1) * 1000 }
             if manual { setAutoSortFlag(list, false) }
         }
-        if wasPinned { calendar.sync(t, today: today) }
+        if wasPinned {
+            t.modifiedAt = Date()
+            calendar.sync(t, today: today)
+        }
         refreshDayLog()
         save()
     }
@@ -431,9 +441,12 @@ final class AppModel {
         case let .assign(newSlot, displaced):
             t.topSlot = newSlot
             t.topDay = today
+            t.modifiedAt = Date()
+            t.unscheduled = false // pinning schedules it again
             if let d = displaced, let other = task(d.taskID) {
                 other.topSlot = d.toSlot
                 other.topDay = d.toSlot == nil ? nil : today
+                other.modifiedAt = Date()
                 calendar.sync(other, today: today)
             }
             calendar.sync(t, today: today)
@@ -445,6 +458,7 @@ final class AppModel {
     func unpin(_ t: TaskItem) {
         t.topSlot = nil
         t.topDay = nil
+        t.modifiedAt = Date()
         calendar.sync(t, today: today)
         refreshDayLog()
         save()
@@ -595,11 +609,45 @@ final class AppModel {
 
     func syncAllEvents() {
         guard calendar.hasAccess else { return }
+        _ = calendar.pull(allTasks(), today: today) // Calendar edits made while ProTask was closed
+        trimSyncHistory()
         for t in allTasks() where !t.isIdea && (t.dueDate != nil || t.topSlot != nil || !(t.links ?? []).isEmpty) {
             calendar.sync(t, today: today)
         }
         calendar.loadToday()
         save()
+    }
+
+    /// Coalesces the bursts of EKEventStoreChanged that one edit (or our own saves) can cause.
+    private func schedulePull() {
+        pullWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.pullCalendarChanges() }
+        pullWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: work)
+    }
+
+    /// Two-way sync: apply edits made in Calendar, then push whatever ProTask still wants different.
+    func pullCalendarChanges() {
+        guard calendar.hasAccess else { return }
+        let changed = calendar.pull(allTasks(), today: today)
+        guard !changed.isEmpty else { return }
+        for t in changed { calendar.sync(t, today: today) }
+        trimSyncHistory()
+        refreshDayLog()
+        save()
+    }
+
+    /// Puts a task whose event was deleted in Calendar back on it.
+    func putBackOnCalendar(_ t: TaskItem) {
+        t.unscheduled = false
+        calendar.sync(t, today: today)
+        save()
+    }
+
+    private func trimSyncHistory() {
+        var d = FetchDescriptor<SyncRecord>(sortBy: [SortDescriptor(\.at, order: .reverse)])
+        d.fetchOffset = 200
+        for r in (try? context.fetch(d)) ?? [] { context.delete(r) }
     }
 
     func requestCalendarAccess() async {

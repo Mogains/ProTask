@@ -24,7 +24,7 @@ extension AppModel {
                                links: (t.links ?? []).sorted { $0.kindRaw < $1.kindRaw }.map {
                                    BackupFile.LinkDTO(kindRaw: $0.kindRaw, eventIdentifier: $0.eventIdentifier, externalIdentifier: $0.externalIdentifier,
                                                       contentHash: $0.contentHash, remoteModifiedAt: $0.remoteModifiedAt, lastSyncedAt: $0.lastSyncedAt)
-                               })
+                               }, unscheduled: t.unscheduled ? true : nil)
         }
         let logs = ((try? context.fetch(FetchDescriptor<DayLog>())) ?? []).map {
             BackupFile.DayLogDTO(day: $0.day, top3Complete: $0.top3Complete, promptDismissed: $0.promptDismissed,
@@ -107,6 +107,7 @@ extension AppModel {
             t.topSlot = d.topSlot; t.topDay = d.topDay; t.calendarEventID = d.calendarEventID; t.createdAt = d.createdAt
             t.remindAt = d.remindAt; t.recurrenceRaw = d.recurrenceRaw; t.seriesID = d.seriesID; t.nextOccurrenceID = d.nextOccurrenceID
             t.actualSeconds = d.actualSeconds; t.waitingOn = d.waitingOn; t.followUpDate = d.followUpDate; t.tagsRaw = d.tagsRaw
+            t.unscheduled = d.unscheduled ?? false
             context.insert(t)
             for l in d.links ?? [] {
                 let link = EventLink(kind: LinkKind(rawValue: l.kindRaw) ?? .due, eventIdentifier: l.eventIdentifier)
