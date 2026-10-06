@@ -14,8 +14,11 @@ struct ChatPanel: View {
     private var session: ChatSession { ChatSession.shared }
 
     var body: some View {
+        @Bindable var session = session
         VStack(alignment: .leading, spacing: 0) {
             header
+            Hairline()
+            ChatPromptChips()
             Hairline()
             if showNote {
                 Text("If Google sign-in is blocked here, log in with email")
@@ -26,6 +29,9 @@ struct ChatPanel: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             content.frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .sheet(item: $session.preview) { request in
+            ChatSharePreview(request: request).presentationBackground(Theme.Palette.surface)
         }
         .onAppear {
             session.start()
@@ -54,6 +60,12 @@ struct ChatPanel: View {
             .help("Choose the chat site")
             .padding(.leading, poppedOut ? Theme.Size.trafficLights : 0)
             Spacer()
+            if session.copied {
+                Text("Copied").font(Theme.Fonts.secondary).foregroundStyle(Theme.Palette.textTertiary)
+                    .padding(.trailing, Theme.Space.xs)
+                    .transition(.opacity)
+            }
+            IconButton(icon: .copy, help: "Copy my tasks for chat (⇧⌘J)") { model.copyTasksForChat() }
             IconButton(icon: .reload, help: "Reload") { session.reload() }
             if !poppedOut {
                 IconButton(icon: .popout, help: "Open the chat in its own window") { popOut() }

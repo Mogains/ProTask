@@ -32,6 +32,10 @@ final class ChatSession: NSObject {
     private(set) var state: LoadState = .idle
     /// Shown in its own window instead of the side panel.
     var poppedOut = false
+    /// "Send my tasks" waiting on the preview sheet (first use, or sharing still off).
+    var preview: ChatPreviewRequest?
+    /// Briefly true after a copy, for the "Copied" confirmation.
+    var copied = false
 
     @ObservationIgnored private var _webView: WKWebView?
 
@@ -107,6 +111,11 @@ final class ChatSession: NSObject {
             ? "You're offline."
             : "Couldn't load \(provider == .custom ? "the page" : provider.title).")
     }
+}
+
+struct ChatPreviewRequest: Identifiable {
+    let id = UUID()
+    var prompt: ChatPrompt?
 }
 
 extension ChatSession: WKNavigationDelegate {

@@ -149,6 +149,9 @@ struct SettingsView: View {
                 .foregroundStyle(Theme.Palette.textTertiary)
                 .padding(.horizontal, Theme.Space.l)
             Hairline().padding(.vertical, Theme.Space.s)
+            SectionLabel(title: "AI chat").padding(.horizontal, Theme.Space.l).frame(height: Theme.Size.row)
+            ChatShareOptions().padding(.horizontal, Theme.Space.l).padding(.bottom, Theme.Space.s)
+            Hairline().padding(.vertical, Theme.Space.s)
             SectionLabel(title: "Permissions").padding(.horizontal, Theme.Space.l).frame(height: Theme.Size.row)
             row("Calendar") {
                 if model.calendar.hasAccess {

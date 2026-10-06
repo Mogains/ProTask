@@ -100,6 +100,7 @@ enum Theme {
         static let chatWindowMinWidth: CGFloat = 360
         static let chatWindowMinHeight: CGFloat = 420
         static let customURLField: CGFloat = 220
+        static let chatPreviewHeight: CGFloat = 280
     }
 
     // MARK: Type
