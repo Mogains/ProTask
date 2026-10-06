@@ -4,7 +4,7 @@ import { after } from "next/server";
 import { prisma } from "@/lib/db";
 import { getSnapshot } from "@/lib/state";
 import { dayKey } from "@/lib/day";
-import { deleteEventsFor, disconnect, syncTasks } from "@/lib/google";
+import { deleteEventsFor, disconnect, pullChanges, syncTasks } from "@/lib/google";
 import { sortTasks } from "@/lib/sort";
 import { planTopAssignment, TOP3_FULL_MESSAGE } from "@/lib/top3";
 import { refreshTodayLog } from "@/lib/topServer";
@@ -45,7 +45,11 @@ export async function updateTask(id: string, input: TaskInput): Promise<ActionRe
   const data = normalizeInput(input);
   const existing = await prisma.task.findUniqueOrThrow({ where: { id } });
   const position = existing.list === data.list ? existing.position : await endOfList(data.list);
-  await prisma.task.update({ where: { id }, data: { ...data, position } });
+  // A new due date or time puts a task whose event was deleted in the calendar back on it.
+  const rescheduled =
+    existing.unscheduled &&
+    (existing.dueAt?.getTime() !== data.dueAt?.getTime() || existing.hasDueTime !== data.hasDueTime);
+  await prisma.task.update({ where: { id }, data: { ...data, position, ...(rescheduled ? { unscheduled: false } : {}) } });
   sync(id);
   return result();
 }
@@ -121,7 +125,8 @@ export async function assignTop(taskId: string, slot?: number): Promise<ActionRe
     // Clear both slots first so the unique constraint on topSlot is never violated mid-swap.
     const clear = [taskId, plan.displaced?.taskId].filter((x): x is string => !!x);
     await tx.task.updateMany({ where: { id: { in: clear } }, data: { topSlot: null } });
-    await tx.task.update({ where: { id: taskId }, data: { topSlot: plan.slot, topDate: today } });
+    // Pinning schedules it again, so an unscheduled task goes back on the calendar.
+    await tx.task.update({ where: { id: taskId }, data: { topSlot: plan.slot, topDate: today, unscheduled: false } });
     if (plan.displaced) {
       const toSlot = plan.displaced.toSlot;
       await tx.task.update({
@@ -142,6 +147,21 @@ export async function removeTop(taskId: string): Promise<ActionResult> {
   sync(taskId);
   await refreshTodayLog();
   return result();
+}
+
+/** Put a task whose event was deleted in the calendar back on it. */
+export async function reschedule(taskId: string): Promise<ActionResult> {
+  await requireSession();
+  await prisma.task.updateMany({ where: { id: taskId }, data: { unscheduled: false } });
+  sync(taskId);
+  return result();
+}
+
+/** Pull edits made in the calendar. Returns a fresh snapshot only when a task changed. */
+export async function pullCalendar(): Promise<Snapshot | null> {
+  await requireSession();
+  const changed = await pullChanges();
+  return changed.length ? getSnapshot() : null;
 }
 
 /** Hide today's "pick your Top 3" prompt. */

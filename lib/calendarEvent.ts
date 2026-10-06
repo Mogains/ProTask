@@ -102,7 +102,8 @@ export function buildEvent(task: EventTask, today: string, timeZone?: string): E
   return e.DUE ?? e.PINNED ?? null;
 }
 
-type EventTimes = { summary?: string | null; start?: EventBody["start"] | null; end?: EventBody["end"] | null };
+type Time = { date?: string | null; dateTime?: string | null };
+type EventTimes = { summary?: string | null; start?: Time | null; end?: Time | null };
 
 /** Instant of a dateTime, or the date itself, so "…T14:00:00Z" and "…T16:00:00+02:00" compare equal. */
 function when(t?: { date?: string | null; dateTime?: string | null } | null): string {

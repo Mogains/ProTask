@@ -2,20 +2,45 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { freeSlots, type CalEvent } from "@/lib/freeTime";
+import type { SyncHistoryEntry } from "@/lib/types";
 import { formatMinutes } from "./format";
 
 type Props = {
   configured: boolean;
   connected: boolean;
   email: string | null;
+  needsReconnect: boolean;
+  history: SyncHistoryEntry[];
   onDisconnect: () => void;
 };
+
+const REASON: Record<string, string> = {
+  conflict: "Edited in both places",
+  "deleted-in-calendar": "Deleted in the calendar",
+  "pinned-moved": "Top 3 event moved back",
+};
+
+/** One line on what sync kept and what it replaced. The replaced version is in the tooltip. */
+function historyLine(h: SyncHistoryEntry) {
+  if (h.reason === "conflict") return h.winner === "calendar" ? "kept the calendar's edit" : "kept the ProTask edit";
+  if (h.reason === "deleted-in-calendar") return "task kept, marked off calendar";
+  return "it follows your Top 3 day";
+}
+
+function lostText(lost: string) {
+  try {
+    const v = JSON.parse(lost) as { title?: string; start?: string | null } | null;
+    return v ? `Replaced: ${v.title ?? ""}${v.start ? ` (${v.start})` : ""}` : "";
+  } catch {
+    return "";
+  }
+}
 
 const time = (d: Date) => d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
 const WORK_START = 8;
 const WORK_END = 20;
 
-export function CalendarSidebar({ configured, connected, email, onDisconnect }: Props) {
+export function CalendarSidebar({ configured, connected, email, needsReconnect, history, onDisconnect }: Props) {
   const [events, setEvents] = useState<CalEvent[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -89,6 +114,14 @@ export function CalendarSidebar({ configured, connected, email, onDisconnect }: 
         </div>
       ) : (
         <div className="space-y-4 text-sm">
+          {needsReconnect && (
+            <p className="rounded-lg bg-amber-400/15 px-3 py-2">
+              Google stopped accepting Top 3’s access, so calendar sync is paused.{" "}
+              <a href="/api/google/connect" className="font-medium underline">
+                Reconnect
+              </a>
+            </p>
+          )}
           {error && <p className="text-rose-500">{error}</p>}
           {events === null ? (
             <p className="text-zinc-500">Loading…</p>
@@ -136,6 +169,20 @@ export function CalendarSidebar({ configured, connected, email, onDisconnect }: 
                 <p className="text-zinc-500">No free blocks left between 8am and 8pm.</p>
               )}
             </div>
+          )}
+
+          {history.length > 0 && (
+            <details className="text-xs text-zinc-500">
+              <summary className="cursor-pointer select-none">Recent sync changes</summary>
+              <ul className="mt-1.5 space-y-1">
+                {history.map((h) => (
+                  <li key={h.id} title={lostText(h.lost)}>
+                    <span className="text-zinc-700 dark:text-zinc-300">{h.taskTitle}</span>: {REASON[h.reason] ?? h.reason},{" "}
+                    {historyLine(h)}
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
 
           <div className="flex items-center gap-2 border-t border-zinc-200 pt-3 text-xs text-zinc-500 dark:border-zinc-800">

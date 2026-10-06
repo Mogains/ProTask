@@ -31,6 +31,8 @@ model Task {
   /// Legacy single event link, migrated into EventLink rows (lib/eventLinks.ts). No longer written.
   calendarEventId String?
   syncError       String?
+  /// Its calendar event was deleted in the calendar. Shown on Today; no event is recreated until rescheduled.
+  unscheduled     Boolean   @default(false)
   links           EventLink[]
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -84,6 +86,11 @@ model GoogleAccount {
   expiresAt    DateTime?
   /// AES-256-GCM ciphertext of the tokens when TOKEN_STORE=encrypted
   tokenCipher  String?
+  /// Google incremental sync token for the "Top 3" calendar
+  syncToken    String?
+  lastPulledAt DateTime?
+  /// Google refused the stored tokens (revoked or expired): the user must connect again
+  needsReconnect Boolean @default(false)
   /// id of the dedicated "Top 3" calendar
   calendarId   String?
 }
@@ -104,4 +111,18 @@ model Session {
   createdAt  DateTime @default(now())
   expiresAt  DateTime
   lastSeenAt DateTime @default(now())
+}
+
+/// What two-way sync overwrote or removed, so nothing is lost silently. The newest 200 are kept.
+model SyncHistory {
+  id        String   @id @default(cuid())
+  at        DateTime @default(now())
+  taskId    String?
+  taskTitle String
+  /// "conflict" | "deleted-in-calendar" | "pinned-moved"
+  reason    String
+  /// "calendar" | "protask": whose version was kept
+  winner    String?
+  /// JSON {title, start, end} of the version that was not kept
+  lost      String
 }

@@ -18,9 +18,11 @@ type Props = CardHandlers & {
   showPrompt: boolean;
   onDismissPrompt: () => void;
   allDone: boolean;
+  unscheduled: Task[];
+  onPutBack: (t: Task) => void;
 };
 
-export function TopThree({ bySlot, showPrompt, onDismissPrompt, allDone, ...handlers }: Props) {
+export function TopThree({ bySlot, showPrompt, onDismissPrompt, allDone, unscheduled, onPutBack, ...handlers }: Props) {
   const filled = SLOTS.filter((s) => bySlot[s]).length;
   const doneCount = SLOTS.filter((s) => bySlot[s]?.completed).length;
   return (
@@ -65,6 +67,37 @@ export function TopThree({ bySlot, showPrompt, onDismissPrompt, allDone, ...hand
           <Slot key={n} n={n} task={bySlot[n]} glow={showPrompt} {...handlers} />
         ))}
       </div>
+
+      {unscheduled.length > 0 && (
+        <div className="mt-4">
+          <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            Removed from your calendar
+          </h3>
+          <ul className="space-y-1.5">
+            {unscheduled.map((t) => (
+              <li key={t.id} className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
+                  <TaskCard
+                    task={t}
+                    today={handlers.today}
+                    onToggle={handlers.onToggle}
+                    onEdit={handlers.onEdit}
+                    onActivate={handlers.onActivate}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onPutBack(t)}
+                  className="shrink-0 rounded-lg px-2 py-1 text-sm text-zinc-500 hover:bg-black/5 hover:text-zinc-900 dark:hover:bg-white/5 dark:hover:text-zinc-100"
+                  title="Create its calendar event again"
+                >
+                  Put back
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }

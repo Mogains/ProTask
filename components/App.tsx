@@ -24,8 +24,10 @@ import {
   disconnectGoogle,
   dismissPrompt,
   getState,
+  pullCalendar,
   removeTop,
   reorderList,
+  reschedule,
   setAutoSort,
   toggleComplete,
   updateTask,
@@ -102,6 +104,8 @@ export default function App({ initial }: { initial: Snapshot }) {
     return out;
   }, [tasks]);
   const pinned = SLOTS.map((s) => bySlot[s]).filter((t): t is Task => !!t);
+  // Their calendar event was deleted in the calendar: shown on Today until rescheduled.
+  const unscheduled = useMemo(() => tasks.filter((t) => t.unscheduled && !t.completed), [tasks]);
   const allDone = pinned.length === 3 && pinned.every((t) => t.completed);
   const showPrompt = !snap.promptDismissed && pinned.length === 0 && lists.HAVE_TO.length + lists.NICE_TO.length > 0;
 
@@ -160,6 +164,7 @@ export default function App({ initial }: { initial: Snapshot }) {
         topDate: null,
         calendarEventId: null,
         syncError: null,
+        unscheduled: false,
         createdAt: now,
         updatedAt: now,
       };
@@ -201,6 +206,11 @@ export default function App({ initial }: { initial: Snapshot }) {
     [run],
   );
 
+  const putBack = useCallback(
+    (task: Task) => run(patchTask(task.id, { unscheduled: false }), () => reschedule(task.id)),
+    [run],
+  );
+
   // Celebrate when the third one gets checked (not on page load).
   const [celebrating, setCelebrating] = useState(false);
   const wasAllDone = useRef(allDone);
@@ -230,6 +240,25 @@ export default function App({ initial }: { initial: Snapshot }) {
       document.removeEventListener("visibilitychange", check);
     };
   }, [snap.today, setSnap]);
+
+  // Pull edits made in Google Calendar: every minute while visible, and when the tab comes back.
+  const connected = snap.google.connected;
+  useEffect(() => {
+    if (!connected) return;
+    const pull = () => {
+      if (document.visibilityState !== "visible") return;
+      pullCalendar()
+        .then((fresh) => fresh && setSnap(fresh))
+        .catch(() => {});
+    };
+    pull();
+    const id = setInterval(pull, 60_000);
+    document.addEventListener("visibilitychange", pull);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", pull);
+    };
+  }, [connected, setSnap]);
 
   // Result of the Google OAuth redirect (?google=...).
   useEffect(() => {
@@ -417,6 +446,8 @@ export default function App({ initial }: { initial: Snapshot }) {
             bySlot={bySlot}
             today={today}
             allDone={allDone}
+            unscheduled={unscheduled}
+            onPutBack={putBack}
             showPrompt={showPrompt}
             onDismissPrompt={() => run((s) => ({ ...s, promptDismissed: true }), dismissPrompt)}
             onToggle={toggle}
@@ -447,6 +478,7 @@ export default function App({ initial }: { initial: Snapshot }) {
             <div className="lg:sticky lg:top-6 lg:self-start">
               <CalendarSidebar
                 {...snap.google}
+                history={snap.syncHistory}
                 onDisconnect={() =>
                   run((s) => ({ ...s, google: { ...s.google, connected: false, email: null } }), disconnectGoogle)
                 }

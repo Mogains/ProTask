@@ -100,7 +100,7 @@ export function TaskCard({
         >
           {task.title}
         </div>
-        {(due || est || task.notes || task.priority !== "MED") && (
+        {(due || est || task.notes || task.priority !== "MED" || task.unscheduled) && (
           <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400">
             <span className={`rounded px-1.5 py-0.5 font-medium ${PRIORITY_STYLE[task.priority] ?? ""}`}>
               {task.priority === "HIGH" ? "High" : task.priority === "LOW" ? "Low" : "Med"}
@@ -108,6 +108,11 @@ export function TaskCard({
             {due && <span className={due.overdue && !task.completed ? "text-rose-500" : ""}>📅 {due.label}</span>}
             {est && <span>⏱ {est}</span>}
             {task.notes && <span title={task.notes}>📝</span>}
+            {task.unscheduled && (
+              <span title="Its event was deleted in the calendar. Change the due date or press Put back to restore it.">
+                🗓 off calendar
+              </span>
+            )}
             {task.syncError && (
               <span title={task.syncError} className="text-amber-500">
                 ⚠ calendar

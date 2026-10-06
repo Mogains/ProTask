@@ -37,7 +37,18 @@ export type Snapshot = {
   streak: number;
   autoSort: Record<ListKind, boolean>;
   promptDismissed: boolean;
-  google: { configured: boolean; connected: boolean; email: string | null };
+  google: { configured: boolean; connected: boolean; email: string | null; needsReconnect: boolean };
+  /** Newest entries of what two-way sync overwrote or removed. */
+  syncHistory: SyncHistoryEntry[];
+};
+
+export type SyncHistoryEntry = {
+  id: string;
+  at: Date;
+  taskTitle: string;
+  reason: string;
+  winner: string | null;
+  lost: string;
 };
 
 export type ActionResult = { snapshot: Snapshot; error?: string };

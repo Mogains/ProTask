@@ -121,13 +121,13 @@ const events = {
   async list(p: { calendarId: string; syncToken?: string; showDeleted?: boolean; pageToken?: string }) {
     guard();
     if (p.calendarId === "primary") return { data: { items: [] } };
+    fake.calls.push(["list", p.syncToken ? "incremental" : "full", p.calendarId]);
     if (p.syncToken && fake.expiredTokens.has(p.syncToken)) throw httpError(410, "Sync token is no longer valid");
     const since = p.syncToken ? Number(p.syncToken.slice(1)) : 0;
     const items = [...fake.events.values()]
       .filter((e) => e.calendarId === p.calendarId)
       .filter((e) => (p.syncToken ? e.seq > since : p.showDeleted || e.status === "confirmed"))
       .map((e) => structuredClone(e));
-    fake.calls.push(["list", p.syncToken ? "incremental" : "full"]);
     return { data: { items, nextSyncToken: `s${fake.seq}` } };
   },
 };
