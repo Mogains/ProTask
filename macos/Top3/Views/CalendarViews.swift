@@ -129,7 +129,7 @@ struct CalendarScreen: View {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 CalendarAgenda(compact: false)
                 if model.calendar.hasAccess, let cal = model.calendar.top3Calendar() {
-                    Text("Tasks with a due date and today's Top 3 are added to the \"\(cal.title)\" calendar in \(cal.source.title). Changes go one way, from ProTask to your calendar.")
+                    Text("Tasks with a due date and today's Top 3 are added to the \"\(cal.title)\" calendar in \(cal.source.title). Edits you make to those events in Calendar come back to the task.")
                         .font(Theme.Fonts.secondary)
                         .foregroundStyle(Theme.Palette.textTertiary)
                 }
