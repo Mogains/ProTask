@@ -42,6 +42,8 @@ final class ChatSession: NSObject {
     var notice: String?
 
     @ObservationIgnored private var _webView: WKWebView?
+    /// Open sign-in popups (e.g. "Sign in with Google"), each in its own small window.
+    @ObservationIgnored private var popups: [ChatPopup] = []
 
     override init() {
         let d = UserDefaults.standard
@@ -55,6 +57,9 @@ final class ChatSession: NSObject {
         let config = WKWebViewConfiguration()
         config.websiteDataStore = WKWebsiteDataStore(forIdentifier: Self.storeID)
         config.preferences.javaScriptCanOpenWindowsAutomatically = false
+        // Identify as Safari (it is the same WebKit engine). Google refuses sign-in from user agents
+        // that look like an embedded web view.
+        config.applicationNameForUserAgent = "Version/18.0 Safari/605.1.15"
         let w = WKWebView(frame: .zero, configuration: config)
         w.navigationDelegate = self
         w.uiDelegate = self
@@ -162,14 +167,23 @@ extension ChatSession: WKUIDelegate {
     /// Links that open a new window: the provider's own pages load here, everything else in the browser.
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
                  for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
-        if let url = action.request.url {
-            switch ChatProvider.route(url, isMainFrame: true, domains: domains) {
-            case .allow: webView.load(action.request)
-            case .external: NSWorkspace.shared.open(url)
-            case .block: break
+        let url = action.request.url
+        let route = url.map { ChatProvider.route($0, isMainFrame: true, domains: domains) } ?? .allow
+        switch route {
+        case .external:
+            if let url { NSWorkspace.shared.open(url) }
+            return nil
+        case .block:
+            return nil
+        case .allow:
+            // A real popup built from WebKit's configuration keeps window.opener, which sign-in flows
+            // need to hand the result back to the page. Loading it in the panel instead breaks them.
+            let popup = ChatPopup(configuration: configuration, features: windowFeatures, domains: domains) { [weak self] closed in
+                self?.popups.removeAll { $0 === closed }
             }
+            popups.append(popup)
+            return popup.webView
         }
-        return nil
     }
 
     /// File attachments: the standard open panel, so only files you pick are shared with the page.
@@ -179,5 +193,57 @@ extension ChatSession: WKUIDelegate {
         panel.allowsMultipleSelection = parameters.allowsMultipleSelection
         panel.canChooseDirectories = false
         panel.begin { response in completionHandler(response == .OK ? panel.urls : nil) }
+    }
+}
+
+/// A popup opened by the chat page, such as a sign-in window. Same rules as the panel: only the provider's
+/// sites load in it, everything else goes to the browser. It closes when the page calls window.close().
+@MainActor
+final class ChatPopup: NSObject, WKNavigationDelegate, WKUIDelegate, NSWindowDelegate {
+    let webView: WKWebView
+    private let window: NSWindow
+    private let domains: [String]
+    private let onClose: (ChatPopup) -> Void
+
+    init(configuration: WKWebViewConfiguration, features: WKWindowFeatures, domains: [String],
+         onClose: @escaping (ChatPopup) -> Void) {
+        self.domains = domains
+        self.onClose = onClose
+        webView = WKWebView(frame: .zero, configuration: configuration)
+        let width = features.width.map { CGFloat(truncating: $0) } ?? 500
+        let height = features.height.map { CGFloat(truncating: $0) } ?? 640
+        window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: max(width, 400), height: max(height, 500)),
+                          styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        super.init()
+        webView.navigationDelegate = self
+        webView.uiDelegate = self
+        window.title = "Sign in"
+        window.isReleasedWhenClosed = false
+        window.contentView = webView
+        window.delegate = self
+        window.center()
+        window.makeKeyAndOrderFront(nil)
+    }
+
+    func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
+                 decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void) {
+        guard let url = action.request.url else { return decisionHandler(.cancel) }
+        switch ChatProvider.route(url, isMainFrame: action.targetFrame?.isMainFrame ?? true, domains: domains) {
+        case .allow: decisionHandler(.allow)
+        case .external:
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+        case .block: decisionHandler(.cancel)
+        }
+    }
+
+    func webViewDidClose(_ webView: WKWebView) {
+        window.close()
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        webView.navigationDelegate = nil
+        webView.uiDelegate = nil
+        onClose(self)
     }
 }
