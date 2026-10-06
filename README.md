@@ -20,6 +20,7 @@ Requires macOS 14 (Sonoma) or later.
 - **Waiting On.** Track things you've handed off and get a nudge to follow up.
 - **Menu bar and widget.** See "2/3" progress in the menu bar. Desktop widgets show your Top 3 and Parking Lot.
 - **Backups.** Automatic daily backups, plus JSON and Markdown export.
+- **AI chat panel.** <kbd>⌘</kbd> <kbd>J</kbd> opens Claude, ChatGPT or Gemini beside your tasks. You sign in inside the page, and ProTask never touches your login. Copy your tasks into the chat with one click (off until you turn it on), and paste its suggestions back to approve them. [Details](macos/README.md#ai-chat-panel).
 
 ## Install
 
@@ -42,6 +43,8 @@ ProTask asks for **Notifications**, used for Parking Lot reminders, and **Calend
 | <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>P</kbd> | Park an idea |
 | <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>F</kbd> | Start or stop focus |
 | <kbd>⌘</kbd> <kbd>Return</kbd> | Mark done |
+| <kbd>⌘</kbd> <kbd>J</kbd> | Show or hide the AI chat panel |
+| <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>J</kbd> | Copy your tasks for the AI chat |
 
 The full list is in the [Mac app guide](macos/README.md#keyboard-shortcuts).
 

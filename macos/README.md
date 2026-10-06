@@ -26,6 +26,7 @@ A native macOS goals and to-do app built around one idea: every day, pick your *
 | Weekly review | Completed this week vs last, completion rate, streak, focus time, actual vs estimated, full Top 3 days, and one sparkline. |
 | Desktop widgets | **Top 3** (small, medium, large; medium and large add the newest Parking Lot ideas) and **Parking Lot** (small, medium). |
 | Export and backup | File menu: JSON backup, Markdown export, import from JSON. A daily backup keeps the newest seven. |
+| AI chat panel | Command-J opens Claude, ChatGPT, Gemini or a site of your choice in a side panel. Copy your tasks into it and paste its suggestions back. See [AI chat panel](#ai-chat-panel). |
 
 The left sidebar can be hidden with Control-Command-S or the header button.
 
@@ -106,6 +107,8 @@ ProTask uses its own icon set, not SF Symbols. Each icon is a hand-written 16×1
 | Command-E | Edit the selected task |
 | Shift-Command-F | Start or stop the focus timer on the selected task |
 | Control-Command-S | Hide or show the sidebar |
+| Command-J | Show or hide the AI chat panel |
+| Shift-Command-J | Copy your tasks for the AI chat |
 | Command-Return | Mark the selected task done or not done |
 | Option-Command-0 | Go to Today |
 | Option-Command-1 / 2 / 3 / 4 | Go to Have to do, Nice to do, Waiting On, Parking Lot |
@@ -147,6 +150,46 @@ Click a task to select it. Double-click to edit. Right-click for every action.
 - Only the title, date, time and length come back. Event notes are overwritten by the task's notes.
 - The sync history is stored in the database, but there's no screen for it yet and backups don't include it.
 - If every linked event (three or more) disappears at once, ProTask assumes the calendar was replaced or hasn't loaded, and adds the events again instead of taking every task off the calendar.
+
+## AI chat panel
+
+Command-J (or the chat button in the header) opens a chat site in a panel on the right. Drag its left edge to resize it, or use the pop-out button to give it its own window.
+
+**How it works**
+- The panel is a web view showing the site you pick at the top: Claude (claude.ai), ChatGPT, Gemini, or a custom https address. ProTask remembers your choice.
+- You sign in inside the page, the same way you would in a browser. Sign-in stays in ProTask's own website data store under `~/Library/WebKit/com.anmolbhatt.top3/`, so you stay signed in between launches. Delete that folder to sign out everywhere.
+- The page can only move around the chosen site and its sign-in pages. Any other link opens in your default browser.
+- **Google sign-in:** Google often blocks sign-in inside apps. If that happens, sign in with email instead. The panel says this the first time you open it.
+- If you're offline or the page fails to load, the panel shows a short message and a Reload button.
+
+**What ProTask never does**
+- It never reads, copies, stores or sends any login token, session cookie or password for a chat site. It doesn't touch the web view's cookie store and injects no scripts.
+- It makes no network calls of its own for this feature, uses no API keys and runs no other programs. Only the page you open talks to its site.
+- Nothing from the panel, your snapshots or pasted replies is written to a log or the repo.
+
+**Copying your tasks (off by default)**
+- Turn on **Share task data with chat** in Settings > AI chat, or in the preview that appears the first time you copy. The copied text goes to whichever site you paste it into, under that site's terms.
+- The copy button and Shift-Command-J put a plain-text snapshot on the clipboard: today's date, your Top 3, open tasks in each list with due date, priority and estimate, Waiting On items, Parking Lot ideas, and today's calendar events. Notes are cut to 80 characters. Each section has its own switch in Settings.
+- The chips above the chat (Plan my day, Pick my Top 3, Sort my Parking Lot, What should I drop this week) copy the same snapshot plus a short request.
+- ProTask never pastes or sends anything into the chat. You paste it yourself.
+
+**Applying suggestions**
+- Every snapshot asks the assistant to end its reply with a block like this:
+
+  ````
+  ```protask-actions
+  add | Have to do | email prof | due 2026-10-09 15:00
+  move | task title | Nice to do
+  top3 | 1 | task title
+  due | task title | 2026-10-09
+  ```
+  ````
+
+- Copy the reply, then click **Paste reply** (the clipboard button in the panel header). ProTask reads only that block and shows the changes on a card to **Approve** or **Cancel**.
+- Only those four actions exist. Pasted text is treated as untrusted: anything else, including deletes, setting changes or instructions written in the reply, is dropped and listed under *Ignored* on the card. Task titles have to match exactly one open task.
+- After you approve, **Undo** is available for 30 seconds.
+
+**Entitlements:** none were added. ProTask isn't sandboxed, so the web view needs no network or other entitlement.
 
 ## Widget note
 
