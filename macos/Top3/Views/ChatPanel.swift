@@ -28,7 +28,9 @@ struct ChatPanel: View {
                     .padding(.vertical, Theme.Space.s)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
-            content.frame(maxWidth: .infinity, maxHeight: .infinity)
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .bottom) { replyOverlay }
         }
         .sheet(item: $session.preview) { request in
             ChatSharePreview(request: request).presentationBackground(Theme.Palette.surface)
@@ -66,6 +68,7 @@ struct ChatPanel: View {
                     .transition(.opacity)
             }
             IconButton(icon: .copy, help: "Copy my tasks for chat (⇧⌘J)") { model.copyTasksForChat() }
+            IconButton(icon: .paste, help: "Paste reply: apply the changes in the reply you copied") { model.pasteChatReply() }
             IconButton(icon: .reload, help: "Reload") { session.reload() }
             if !poppedOut {
                 IconButton(icon: .popout, help: "Open the chat in its own window") { popOut() }
@@ -78,6 +81,28 @@ struct ChatPanel: View {
 
     private func popOut() {
         openWindow(id: "chat")
+    }
+
+    // MARK: Reply
+
+    @ViewBuilder private var replyOverlay: some View {
+        switch session.flow.state {
+        case let .reviewing(plan):
+            ChatConfirmCard(plan: plan).transition(.opacity.combined(with: .offset(y: Theme.Space.xs)))
+        case let .applied(count, _):
+            ChatUndoBar(count: count).transition(.opacity)
+        case .idle:
+            if let notice = session.notice {
+                Text(notice)
+                    .font(Theme.Fonts.small)
+                    .foregroundStyle(Theme.Palette.textSecondary)
+                    .padding(.horizontal, Theme.Space.m)
+                    .padding(.vertical, Theme.Space.s)
+                    .background(RoundedRectangle(cornerRadius: Theme.Radius.m).fill(Theme.Palette.elevated))
+                    .padding(Theme.Space.m)
+                    .transition(.opacity)
+            }
+        }
     }
 
     // MARK: Content

@@ -36,6 +36,10 @@ final class ChatSession: NSObject {
     var preview: ChatPreviewRequest?
     /// Briefly true after a copy, for the "Copied" confirmation.
     var copied = false
+    /// Pasted reply: review, approve, undo.
+    var flow = ChatConfirmFlow()
+    /// A one-line message in the panel, e.g. when the clipboard has no protask-actions block.
+    var notice: String?
 
     @ObservationIgnored private var _webView: WKWebView?
 

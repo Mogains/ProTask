@@ -84,3 +84,112 @@ extension AppModel {
         }
     }
 }
+
+// MARK: Paste reply
+
+extension AppModel {
+    /// Reads the reply you copied from the chat and shows its protask-actions as a confirm card.
+    /// The text is untrusted: see ChatActions. It is never stored or logged.
+    func pasteChatReply() {
+        let session = ChatSession.shared
+        guard let text = NSPasteboard.general.string(forType: .string), !text.isEmpty else {
+            return showChatNotice("Copy the assistant's reply first, then press Paste reply.")
+        }
+        let parsed = ChatActions.parse(text)
+        guard parsed.foundBlock else {
+            return showChatNotice("No protask-actions block in the copied text.")
+        }
+        let refs = allTasks().map {
+            ChatActions.TaskRef(id: $0.id, title: $0.title, list: $0.list, isCompleted: $0.isCompleted, topSlot: $0.topSlot)
+        }
+        withAnimation(Theme.Motion.standard) { session.flow.review(ChatActions.plan(parsed, tasks: refs)) }
+    }
+
+    func cancelChatPlan() {
+        withAnimation(Theme.Motion.standard) { ChatSession.shared.flow.cancel() }
+    }
+
+    func approveChatPlan() {
+        let session = ChatSession.shared
+        withAnimation(Theme.Motion.standard) {
+            _ = session.flow.approve(now: Date()) { applyChatPlan($0) }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + ChatConfirmFlow.undoWindow) {
+            withAnimation(Theme.Motion.standard) { session.flow.expire(now: Date()) }
+        }
+    }
+
+    func undoChatPlan() {
+        guard let undo = ChatSession.shared.flow.takeUndo(now: Date()) else { return }
+        restore(undo)
+    }
+
+    private func showChatNotice(_ text: String) {
+        let session = ChatSession.shared
+        withAnimation(Theme.Motion.standard) { session.notice = text }
+        DispatchQueue.main.asyncAfter(deadline: .now() + Theme.Motion.toastDuration) {
+            if session.notice == text { withAnimation(Theme.Motion.standard) { session.notice = nil } }
+        }
+    }
+
+    private func chatFields() -> [UUID: ChatTaskFields] {
+        Dictionary(uniqueKeysWithValues: allTasks().map {
+            ($0.id, ChatTaskFields(list: $0.list, position: $0.position, topSlot: $0.topSlot, topDay: $0.topDay,
+                                   dueDate: $0.dueDate, hasDueTime: $0.hasDueTime, unscheduled: $0.unscheduled))
+        })
+    }
+
+    /// Applies approved changes through the same paths as the UI, so calendar events and reminders follow.
+    private func applyChatPlan(_ plan: ChatActions.Plan) -> ChatUndo {
+        let before = chatFields()
+        var created: [UUID] = []
+        for change in plan.changes {
+            switch change {
+            case let .add(list, title, due, hasTime):
+                if let t = addTask(TaskDraft(title: title, list: list, dueDate: due, hasDueTime: due != nil && hasTime)) {
+                    created.append(t.id)
+                }
+            case let .move(id, _, to):
+                move(id, to: to, before: nil, manual: false)
+            case let .top3(slot, id, _):
+                pin(id, slot: slot)
+            case let .due(id, _, date, hasTime):
+                guard let t = task(id) else { continue }
+                t.dueDate = date
+                t.hasDueTime = hasTime
+                t.unscheduled = false
+                t.modifiedAt = Date()
+                calendar.sync(t, today: today)
+                save()
+            }
+        }
+        refreshDayLog()
+        save()
+        return ChatUndo.diff(before: before, after: chatFields(), created: created)
+    }
+
+    private func restore(_ undo: ChatUndo) {
+        for id in undo.created {
+            guard let t = task(id) else { continue }
+            calendar.removeEvents(of: t)
+            notifications.cancel(id: t.id)
+            if selectedTaskID == t.id { selectedTaskID = nil }
+            context.delete(t)
+        }
+        for (id, f) in undo.before {
+            guard let t = task(id) else { continue }
+            t.list = f.list
+            t.position = f.position
+            t.topSlot = f.topSlot
+            t.topDay = f.topDay
+            t.dueDate = f.dueDate
+            t.hasDueTime = f.hasDueTime
+            t.unscheduled = f.unscheduled
+            t.modifiedAt = Date()
+            calendar.sync(t, today: today)
+        }
+        refreshDayLog()
+        save()
+        showToast("Undone")
+    }
+}

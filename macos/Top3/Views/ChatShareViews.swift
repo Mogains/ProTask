@@ -121,3 +121,68 @@ struct ChatPromptChips: View {
         }
     }
 }
+
+/// Proposed changes from a pasted reply: Approve or Cancel. Ignored lines are listed so nothing is hidden.
+struct ChatConfirmCard: View {
+    @Environment(AppModel.self) private var model
+    let plan: ChatActions.Plan
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.s) {
+            Text(plan.changes.isEmpty ? "No changes to apply" : plan.changes.count == 1 ? "1 proposed change" : "\(plan.changes.count) proposed changes")
+                .font(Theme.Fonts.smallMedium)
+            ScrollView {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                    ForEach(Array(plan.changes.enumerated()), id: \.offset) { _, c in
+                        Text(c.summary).font(Theme.Fonts.small).foregroundStyle(Theme.Palette.text)
+                    }
+                    if !plan.ignored.isEmpty {
+                        SectionLabel(title: "Ignored", detail: "\(plan.ignored.count)").padding(.top, Theme.Space.xs)
+                        ForEach(Array(plan.ignored.enumerated()), id: \.offset) { _, i in
+                            Text("\(i.line): \(i.reason)")
+                                .font(Theme.Fonts.secondary)
+                                .foregroundStyle(Theme.Palette.textTertiary)
+                                .lineLimit(2)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxHeight: Theme.Size.chatPreviewHeight)
+            .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: Theme.Space.s) {
+                Spacer()
+                Button("Cancel") { model.cancelChatPlan() }.buttonStyle(.ghost).keyboardShortcut(.cancelAction)
+                Button("Approve") { model.approveChatPlan() }
+                    .buttonStyle(.primary)
+                    .disabled(plan.changes.isEmpty)
+            }
+        }
+        .padding(Theme.Space.m)
+        .background(RoundedRectangle(cornerRadius: Theme.Radius.m).fill(Theme.Palette.elevated))
+        .overlay(RoundedRectangle(cornerRadius: Theme.Radius.m).strokeBorder(Theme.Palette.border, lineWidth: Theme.Size.hairline))
+        .shadow(color: Theme.Palette.shadow, radius: Theme.Space.s)
+        .padding(Theme.Space.m)
+    }
+}
+
+/// After approving: a short bar with Undo, for 30 seconds.
+struct ChatUndoBar: View {
+    @Environment(AppModel.self) private var model
+    let count: Int
+
+    var body: some View {
+        HStack(spacing: Theme.Space.s) {
+            Text(count == 1 ? "Applied 1 change" : "Applied \(count) changes")
+                .font(Theme.Fonts.small)
+                .foregroundStyle(Theme.Palette.textSecondary)
+            Spacer()
+            Button("Undo") { model.undoChatPlan() }.buttonStyle(.ghost)
+        }
+        .padding(.horizontal, Theme.Space.m)
+        .padding(.vertical, Theme.Space.xs)
+        .background(RoundedRectangle(cornerRadius: Theme.Radius.m).fill(Theme.Palette.elevated))
+        .overlay(RoundedRectangle(cornerRadius: Theme.Radius.m).strokeBorder(Theme.Palette.border, lineWidth: Theme.Size.hairline))
+        .padding(Theme.Space.m)
+    }
+}
