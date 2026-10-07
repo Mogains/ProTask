@@ -8,6 +8,7 @@ enum IconName: String, CaseIterable {
     case `repeat`, drag, due, priority1 = "priority-1", priority2 = "priority-2", priority3 = "priority-3", notes, idea
     case chat, copy, paste, popout, reload
     case mark
+    case chevronRight = "chevron-right", chevronDown = "chevron-down"
 
     var assetName: String { "icon-\(rawValue)" }
 }

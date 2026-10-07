@@ -8,6 +8,7 @@ enum SidebarSection: Hashable {
     case today
     case list(ListKind)
     case calendar
+    case vision
     case done
     case review
 }
@@ -50,6 +51,12 @@ final class AppModel {
 
     var section: SidebarSection = .today
     var selectedTaskID: UUID?
+    /// The goal selected on the Vision board.
+    var selectedGoalID: UUID?
+    /// Quick add goal (Shift-Cmd-V), from any section.
+    var showGoalQuickAdd = false
+    /// Vision board view state: zoom, pan, collapsed lanes, open prompts.
+    let visionBoard = VisionBoardState()
     var editor: EditorRequest?
     var showQuickPark = false
     var showPalette = false
@@ -791,6 +798,8 @@ final class AppModel {
             action()
             try? await Task.sleep(for: .seconds(0.8))
             captureWindow(as: name, in: dir) {}
+            captureSheet(as: "\(name)-sheet", in: dir)
+            resetVisionShot()
             showPlanning = false
             showWrapUp = false
             focus = nil
@@ -820,7 +829,58 @@ final class AppModel {
              self.section = .list(.haveTo)
              // In memory only, so snapshots never touch real preferences.
              self.focus = RunningFocus(taskID: nil, title: "Finish quarterly report", start: Date().addingTimeInterval(-7 * 60), seconds: 25 * 60)
-         })]
+         })] + visionDebugShots()
+    }
+
+    /// Vision board states for snapshots: each zoom level, a selection, the inline prompt and the sheets.
+    func visionDebugShots() -> [(String, () -> Void)] {
+        func show(_ zoom: TimelineZoom, select title: String? = nil, open: Bool = false) {
+            section = .vision
+            visionBoard.setZoom(zoom, reduceMotion: true)
+            visionBoard.goToToday(reduceMotion: true)
+            selectGoal(allGoals().first { $0.title == title }?.id, open: open)
+        }
+        return [("vision", { show(.year) }),
+                ("vision-decade", { show(.decade) }),
+                ("vision-quarter", { show(.quarter, select: "Ship the billing migration") }),
+                ("vision-month", { show(.month) }),
+                ("vision-selected", { show(.year, select: "Run a half marathon", open: true) }),
+                ("vision-prompt", {
+                    show(.year)
+                    if let t = self.visionTimelines().first(where: { $0.name == "Finance" }) {
+                        self.visionBoard.pending = PendingGoal(laneID: t.id, day: Calendar.current.date(byAdding: .month, value: 2, to: Date()) ?? Date())
+                    }
+                }),
+                ("vision-collapsed", {
+                    show(.year)
+                    for t in self.visionTimelines() where t.name == "Finance" || t.name == "Projects" { self.visionBoard.toggleCollapsed(t.id) }
+                    self.visionBoard.setShowArchived(true)
+                }),
+                ("vision-quickadd", { show(.year); self.showGoalQuickAdd = true }),
+                ("vision-delete", {
+                    show(.year)
+                    self.visionBoard.prompt = self.visionTimelines().first { $0.name == "Career" }.map { .deleteTimeline($0.id) }
+                })]
+    }
+
+    /// Clears what a Vision snapshot opened, so the next one starts clean.
+    private func resetVisionShot() {
+        showGoalQuickAdd = false
+        visionBoard.prompt = nil
+        visionBoard.pending = nil
+        visionBoard.openGoalID = nil
+        selectedGoalID = nil
+        for t in visionTimelines(includeArchived: true) where visionBoard.isCollapsed(t.id) { visionBoard.toggleCollapsed(t.id) }
+        visionBoard.setShowArchived(false)
+    }
+
+    /// The sheet over the main window, if one is open.
+    private func captureSheet(as name: String, in dir: String) {
+        guard let window = NSApp.windows.first(where: { $0.isVisible && $0.canBecomeMain }), let sheet = window.attachedSheet,
+              let view = sheet.contentView?.superview ?? sheet.contentView,
+              let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+        view.cacheDisplay(in: view.bounds, to: rep)
+        try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: dir).appending(path: "\(name).png"))
     }
 
     private func captureWindow(as name: String, in dir: String, before: () -> Void) {

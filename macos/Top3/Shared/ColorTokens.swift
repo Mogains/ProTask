@@ -28,6 +28,8 @@ enum ColorTokens {
         "stone": (0x6F6B66, 0x9F9B95),
     ]
     static let timelineFillAlpha: (light: CGFloat, dark: CGFloat) = (0.15, 0.18)
+    /// A muted terracotta for the small marker on active goals past their target date.
+    static let visionOverdue: Pair = (0xA35F4C, 0xC98D79)
     static let timelineFallback: Pair = (0x5F7088, 0x8F9EB3)
 
     static func timeline(_ name: String) -> Pair { timelinePalette[name] ?? timelineFallback }

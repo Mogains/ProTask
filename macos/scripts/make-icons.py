@@ -55,6 +55,9 @@ ICONS = {
     "popout":     poly((7, 2.5), (2.5, 2.5), (2.5, 13.5), (13.5, 13.5), (13.5, 9)) + line(8, 8, 13.5, 2.5)
                   + poly((9.5, 2.5), (13.5, 2.5), (13.5, 6.5)),
     "reload":     path("M13 8.5A5 5 0 1 1 11.5 4.5") + poly((12, 1.5), (12, 5), (8.5, 5)),
+    # Disclosure (Vision lane collapse)
+    "chevron-right": poly((6, 3.5), (10.5, 8), (6, 12.5)),
+    "chevron-down": poly((3.5, 6), (8, 10.5), (12.5, 6)),
     # Brand mark (menu bar)
     "mark":       BOX + dot(9.5, 4, 2.5),
 }

@@ -235,7 +235,7 @@ struct TaskEditor: View {
     }
 }
 
-private struct PropertyRow<Content: View>: View {
+struct PropertyRow<Content: View>: View {
     let label: String
     @ViewBuilder let content: () -> Content
 

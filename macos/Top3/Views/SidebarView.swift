@@ -30,6 +30,7 @@ struct SidebarView: View {
 
                 Spacer().frame(height: Theme.Space.l)
                 SidebarRow(section: .calendar, title: "Calendar", count: 0)
+                SidebarRow(section: .vision, title: "Vision", count: 0)
                 SidebarRow(section: .done, title: "Done", count: 0)
                 SidebarRow(section: .review, title: "Review", count: 0)
 

@@ -40,6 +40,34 @@ enum Theme {
         /// The same hue as a soft flat tint, for lane and card backgrounds.
         static func fill(_ c: TimelineColor) -> Color { fills[c] ?? Palette.hover }
 
+        /// The small marker on active goals that are past their target date.
+        static let overdue = Color(nsColor: ColorTokens.color(ColorTokens.visionOverdue))
+        /// A one-point top highlight on bars, for a little depth.
+        static let innerHighlight = Color(nsColor: .dynamic(light: 0xFFFFFF, dark: 0xFFFFFF, lightAlpha: 0.7, darkAlpha: 0.07))
+        /// Lines for the finer axis unit (weeks, months), fainter than the hairline border.
+        static let gridMinor = Color(nsColor: .dynamic(light: ColorTokens.border.light, dark: ColorTokens.border.dark,
+                                                       lightAlpha: 0.55, darkAlpha: 0.55))
+        /// Weekend columns at month zoom.
+        static let weekend = Color(nsColor: .dynamic(light: 0x000000, dark: 0xFFFFFF, lightAlpha: 0.018, darkAlpha: 0.02))
+        /// The days before today, barely darker than the future.
+        static let past = Color(nsColor: .dynamic(light: 0x000000, dark: 0x000000, lightAlpha: 0.012, darkAlpha: 0.12))
+
+        /// Opacities applied to a timeline hue.
+        enum Alpha {
+            /// Bar outline.
+            static let border: Double = 0.38
+            static let borderHover: Double = 0.6
+            /// Progress fill: a soft ramp of the hue from left to right.
+            static let progressLow: Double = 0.3
+            static let progressHigh: Double = 0.55
+            /// The lane's left edge and the line under a lane being dragged.
+            static let laneEdge: Double = 0.7
+            /// Today's line through the lanes.
+            static let todayLine: Double = 0.7
+            /// The Today label's tint in the axis.
+            static let todayFill: Double = 0.14
+        }
+
         private static let colors: [TimelineColor: Color] = Dictionary(uniqueKeysWithValues: TimelineColor.allCases.map {
             ($0, Color(nsColor: ColorTokens.color(ColorTokens.timeline($0.rawValue))))
         })
@@ -121,6 +149,60 @@ enum Theme {
         static let chatPreviewHeight: CGFloat = 280
     }
 
+    // MARK: Vision timeline sizes
+
+    enum Timeline {
+        /// Left column with each lane's name, color and summary.
+        static let laneHeaderWidth: CGFloat = 216
+        /// The two-row date axis above the lanes.
+        static let axisHeight: CGFloat = 44
+        static let axisTier: CGFloat = 22
+        static let tickMinor: CGFloat = 4
+        static let tickMajor: CGFloat = 8
+        /// Vertical pitch of one row of bars inside a lane.
+        static let laneRow: CGFloat = 28
+        static let bar: CGFloat = 22
+        static let lanePadding: CGFloat = 10
+        static let laneMinHeight: CGFloat = 62
+        /// Extra height for each added line in a lane's header (undated goals, archived).
+        static let laneHeaderLine: CGFloat = 18
+        static let laneCollapsed: CGFloat = 36
+        static let collapsedBar: CGFloat = 4
+        static let laneEdge: CGFloat = 2
+        static let laneDot: CGFloat = 8
+        static let laneProgressWidth: CGFloat = 56
+        static let milestone: CGFloat = 11
+        static let collapsedMilestone: CGFloat = 7
+        static let overdueDot: CGFloat = 5
+        /// Bars never get narrower than this, so one-day goals stay clickable when zoomed out.
+        static let minBarWidth: CGFloat = 8
+        /// Edge zones that resize a bar.
+        static let edgeHandle: CGFloat = 6
+        /// Off-screen parts of long bars are cut this far past the track's edges.
+        static let overscan: CGFloat = 12
+        /// Goals this far outside the view still get views, so labels hanging off a bar don't pop in.
+        static let cullMargin: CGFloat = 240
+        /// Rough advance of one character of a bar title, for fitting labels without measuring them.
+        static let labelCharWidth: CGFloat = 6.1
+        static let labelPadding: CGFloat = 16
+        static let percentWidth: CGFloat = 30
+        static let selectionStroke: CGFloat = 1.5
+        static let todayLine: CGFloat = 1.5
+        /// Space kept around a goal when the view pans to show it.
+        static let revealPadding: CGFloat = 48
+        /// Where today sits when the board opens or jumps to today (fraction of the track from the left).
+        static let todayFraction: Double = 0.3
+        /// Goal summary panel beside the board.
+        static let panelWidth: CGFloat = 300
+        /// The inline title field for a goal added by double-click.
+        static let promptWidth: CGFloat = 260
+        /// Scroll-wheel tuning: points per line for mice, zoom per point of Cmd-scroll.
+        static let scrollLine: CGFloat = 16
+        static let scrollZoomRate: Double = 0.01
+        /// Bounds for panning: this many years either side of today.
+        static let panYears = 100
+    }
+
     // MARK: Type
 
     enum TextSize {
@@ -169,6 +251,9 @@ enum Theme {
         static let standard = Animation.easeOut(duration: 0.15)
         static let list = Animation.easeOut(duration: 0.18)
         static let checkDelay: Double = 0.18
+        /// Zoom and jump-to-today on the Vision timeline (frames driven by VisionBoardState).
+        static let timelineDuration: Double = 0.24
+        static let timelineFrame: Double = 1.0 / 60
         static let toastDuration: Double = 2.8
     }
 

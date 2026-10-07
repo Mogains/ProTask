@@ -29,7 +29,8 @@ struct ContentView: View {
             }
             .background(Theme.Palette.background)
 
-            if showPanel {
+            // Vision uses the right side for its goal panel, so today's calendar steps aside there.
+            if showPanel && model.section != .vision {
                 Hairline(vertical: true)
                 CalendarPanel()
                     .frame(width: Theme.Size.panelWidth)
@@ -66,6 +67,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $model.showQuickPark) {
             QuickParkSheet().presentationBackground(Theme.Palette.surface)
+        }
+        .sheet(isPresented: $model.showGoalQuickAdd) {
+            GoalQuickAddSheet().presentationBackground(Theme.Palette.surface)
         }
         .overlay {
             if model.showPlanning {
@@ -124,9 +128,11 @@ struct ContentView: View {
                 IconButton(icon: .search, help: "Command palette (⌘K)") { model.showPalette = true }
                 IconButton(icon: .add, help: "New task (⌘N)") { model.newTask() }
                 IconButton(icon: .quickAdd, help: "Park an idea (⇧⌘P)") { model.showQuickPark = true }
-                IconButton(icon: .panel, help: showPanel ? "Hide today's calendar" : "Show today's calendar",
-                           active: showPanel) {
-                    withAnimation(Theme.Motion.list) { showPanel.toggle() }
+                if model.section != .vision {
+                    IconButton(icon: .panel, help: showPanel ? "Hide today's calendar" : "Show today's calendar",
+                               active: showPanel) {
+                        withAnimation(Theme.Motion.list) { showPanel.toggle() }
+                    }
                 }
                 IconButton(icon: .chat, help: showChat ? "Hide AI chat (⌘J)" : "Show AI chat (⌘J)", active: showChat) {
                     model.toggleChatPanel()
@@ -144,6 +150,7 @@ struct ContentView: View {
         case .today: "Today"
         case let .list(l): l.title
         case .calendar: "Calendar"
+        case .vision: "Vision"
         case .done: "Done"
         case .review: "Review"
         }
@@ -161,6 +168,12 @@ struct ContentView: View {
         case let .list(l):
             let n = model.ordered(l, in: visible).count
             return n == 1 ? "1 open" : "\(n) open"
+        case .vision:
+            let timelines = model.visionTimelines()
+            let ids = Set(timelines.map(\.id))
+            let goals = model.allGoals().filter { ids.contains($0.timelineID) }.count
+            guard !timelines.isEmpty else { return nil }
+            return "\(timelines.count == 1 ? "1 timeline" : "\(timelines.count) timelines"), \(goals == 1 ? "1 goal" : "\(goals) goals")"
         case .review:
             let week = WeeklyStats.weekInterval(containing: Date(), calendar: .current)
             return "Week of \(week.start.formatted(.dateTime.month(.abbreviated).day()))"
@@ -182,6 +195,8 @@ struct ContentView: View {
                 NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Calendar.app"))
             }
             .buttonStyle(.ghost)
+        case .vision:
+            VisionHeaderControls()
         default:
             EmptyView()
         }
@@ -202,6 +217,7 @@ struct ContentView: View {
         case let .list(l) where l == .parkingLot: ParkingLotView(tasks: tasks)
         case let .list(l): ListScreen(list: l, tasks: tasks)
         case .calendar: CalendarScreen()
+        case .vision: VisionScreen(tasks: self.tasks)
         case .done: DoneView(tasks: tasks)
         case .review: ReviewView(tasks: tasks)
         }

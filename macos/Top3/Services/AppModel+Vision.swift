@@ -215,6 +215,72 @@ extension AppModel {
         reorderGoals(VisionOrder.moving(id, before: beforeID, in: ids))
     }
 
+    /// New dates from dragging or resizing on the timeline (already in order, whole days).
+    func setGoalDates(_ goal: Goal, start: Date?, target: Date?) {
+        let cal = Calendar.current
+        let s = start.map { cal.startOfDay(for: $0) }, t = target.map { cal.startOfDay(for: $0) }
+        guard goal.startDate != s || goal.targetDate != t else { return }
+        goal.startDate = s
+        goal.targetDate = t
+        goal.modifiedAt = Date()
+        save()
+    }
+
+    /// Moves every goal of `source` to the end of `destination`, keeping their order.
+    func moveGoals(from source: VisionTimeline, to destination: VisionTimeline) {
+        guard source.id != destination.id else { return }
+        var key = VisionOrder.end(after: goals(in: destination.id).map(\.sortOrder))
+        for goal in goals(in: source.id) {
+            goal.timelineID = destination.id
+            goal.sortOrder = key
+            goal.modifiedAt = Date()
+            key += VisionOrder.step
+        }
+        save()
+    }
+
+    /// Moves the goals to `destination`, then deletes the empty timeline.
+    func deleteTimeline(_ timeline: VisionTimeline, movingGoalsTo destination: VisionTimeline) {
+        moveGoals(from: timeline, to: destination)
+        deleteTimeline(timeline)
+    }
+
+    /// A new timeline with a placeholder name and the least used color, ready to be renamed.
+    @discardableResult
+    func createBlankTimeline() -> VisionTimeline? {
+        let used = Set(visionTimelines(includeArchived: true).map(\.name))
+        var name = "New timeline"
+        var n = 2
+        while used.contains(name) { name = "New timeline \(n)"; n += 1 }
+        return createTimeline(TimelineDraft(name: name, color: nextTimelineColor()))
+    }
+
+    /// Swaps a timeline with its neighbor among the lanes the board shows (step -1 up, 1 down).
+    func moveTimelineAmongShown(_ id: UUID, by step: Int) {
+        let shown = visionTimelines(includeArchived: visionBoard.showArchived).map(\.id)
+        guard let i = shown.firstIndex(of: id), shown.indices.contains(i + step) else { return }
+        moveTimeline(id, before: LaneReorder.beforeID(moving: i, to: i + step, ids: shown))
+    }
+
+    /// The timeline quick add uses when there is none yet.
+    func ensureTimelineForQuickAdd() -> VisionTimeline? {
+        if let first = visionTimelines().first { return first }
+        return createTimeline(TimelineDraft(name: "Personal", color: nextTimelineColor()))
+    }
+
+    /// Selects a goal on the board, and opens its summary panel when asked.
+    func selectGoal(_ id: UUID?, open: Bool = false) {
+        selectedGoalID = id
+        if open || visionBoard.openGoalID != nil { visionBoard.openGoalID = id }
+    }
+
+    /// Deletes the goal and clears it from the board's selection.
+    func deleteGoalFromBoard(_ goal: Goal) {
+        if selectedGoalID == goal.id { selectedGoalID = nil }
+        if visionBoard.openGoalID == goal.id { visionBoard.openGoalID = nil }
+        deleteGoal(goal)
+    }
+
     /// Deletes the goal with its logs, images (and their files) and dependencies, and unlinks its tasks.
     func deleteGoal(_ goal: Goal) {
         let title = goal.title
@@ -377,6 +443,8 @@ extension AppModel {
     /// Vision sample data for screenshots. Called from seedDemoData (debug builds, TOP3_DEMO, empty store only).
     func seedVisionDemoData() {
         guard visionTimelines(includeArchived: true).isEmpty else { return }
+        // TOP3_VISION_EMPTY leaves Vision empty, for screenshots of the first-run state.
+        if ProcessInfo.processInfo.environment["TOP3_VISION_EMPTY"] != nil { return }
         let cal = Calendar.current
         let now = Date()
         func months(_ n: Int) -> Date { cal.date(byAdding: .month, value: n, to: cal.startOfDay(for: now)) ?? now }
@@ -410,6 +478,19 @@ extension AppModel {
         _ = make("Publish the photo book", on: projects, .goal, .idea)
         _ = make("Finish the Spanish B1 course", on: education, .goal, .done, start: months(-10), target: months(-1), progress: 100)
         setArchived(education, true)
+
+        // More across the past and the next few years, so every zoom level has something to show.
+        _ = make("Mentor two new engineers", on: career, .goal, .done, start: months(-9), target: months(-2), progress: 100)
+        _ = make("Promotion review", on: career, .milestone, .planned, target: months(5))
+        _ = make("Knee physio routine", on: health, .habitTarget, start: months(-3), target: days(-9), progress: 70)
+        _ = make("Half marathon race day", on: health, .milestone, .planned, target: months(4))
+        _ = make("Run a full marathon", on: health, .goal, .idea, start: months(18), target: months(30))
+        _ = make("Open a retirement account", on: finance, .milestone, .done, target: months(-4))
+        if let life = createTimeline(from: TimelineTemplate.named("life")!) {
+            _ = make("Move into the new flat", on: life, .milestone, .planned, target: days(52))
+            _ = make("Two weeks in Japan", on: life, .goal, .planned, start: months(11), target: cal.date(byAdding: .day, value: 13, to: months(11)))
+            _ = make("Learn to bake sourdough", on: life, .goal, .active, start: days(-20), target: months(2), progress: 25)
+        }
 
         if let billing, let lead { addDependency(upstream: billing, downstream: lead) }
         if let half {

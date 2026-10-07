@@ -132,6 +132,92 @@ struct ActionsMenu<Content: View>: View {
     }
 }
 
+// MARK: - Menus
+
+/// One entry in a PopUpMenuButton's menu.
+struct MenuChoice {
+    enum Kind { case item, separator, header }
+    var title = ""
+    var kind: Kind = .item
+    var checked = false
+    var enabled = true
+    var action: () -> Void = {}
+
+    static func item(_ title: String, checked: Bool = false, enabled: Bool = true, action: @escaping () -> Void) -> MenuChoice {
+        MenuChoice(title: title, checked: checked, enabled: enabled, action: action)
+    }
+    static func header(_ title: String) -> MenuChoice { MenuChoice(title: title, kind: .header) }
+    static let separator = MenuChoice(kind: .separator)
+}
+
+/// A button with our own label that opens a native menu just below it.
+/// SwiftUI's Menu draws its label in system styling on macOS; this keeps the label in the house style.
+struct PopUpMenuButton<Label: View>: View {
+    let help: String
+    /// Side padding and hover fill; off for a label that has to line up with plain text.
+    var padded = true
+    let choices: () -> [MenuChoice]
+    @ViewBuilder let label: () -> Label
+
+    @State private var frame: CGRect = .zero
+    @State private var hovering = false
+
+    var body: some View {
+        Button { PopUpMenu.show(choices(), below: frame) } label: {
+            label()
+                .padding(.horizontal, padded ? Theme.Space.s : 0)
+                .frame(minHeight: padded ? Theme.Size.iconButton : nil)
+                .background(RoundedRectangle(cornerRadius: Theme.Radius.s).fill(hovering ? Theme.Palette.hover : .clear))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { h in withAnimation(Theme.Motion.hover) { hovering = h } }
+        .background(GeometryReader { g in
+            Color.clear
+                .onAppear { frame = g.frame(in: .global) }
+                .onChange(of: g.frame(in: .global)) { frame = g.frame(in: .global) }
+        })
+        .help(help)
+    }
+}
+
+enum PopUpMenu {
+    /// Shows `choices` as a menu under `frame` (in the key window's SwiftUI global space). Returns once it closes.
+    @MainActor
+    static func show(_ choices: [MenuChoice], below frame: CGRect) {
+        guard let content = NSApp.keyWindow?.contentView else { return }
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+        let target = Target(actions: choices.map(\.action))
+        for (i, choice) in choices.enumerated() {
+            switch choice.kind {
+            case .separator: menu.addItem(.separator())
+            case .header: menu.addItem(.sectionHeader(title: choice.title))
+            case .item:
+                let item = NSMenuItem(title: choice.title, action: #selector(Target.run(_:)), keyEquivalent: "")
+                item.target = target
+                item.tag = i
+                item.state = choice.checked ? .on : .off
+                item.isEnabled = choice.enabled
+                menu.addItem(item)
+            }
+        }
+        let y = content.isFlipped ? frame.maxY : content.bounds.height - frame.maxY
+        withExtendedLifetime(target) {
+            _ = menu.popUp(positioning: nil, at: NSPoint(x: frame.minX, y: y), in: content)
+        }
+    }
+
+    private final class Target: NSObject {
+        let actions: [() -> Void]
+        init(actions: [() -> Void]) { self.actions = actions }
+        @objc func run(_ sender: NSMenuItem) {
+            guard actions.indices.contains(sender.tag) else { return }
+            actions[sender.tag]()
+        }
+    }
+}
+
 // MARK: - Inputs
 
 /// Hairline-bordered text field. No system focus ring; the border darkens on focus.

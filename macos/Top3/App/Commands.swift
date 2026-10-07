@@ -7,6 +7,10 @@ struct Top3Commands: Commands {
         CommandGroup(replacing: .newItem) {
             WindowAction("New Task", key: "n", modifiers: .command) { model.newTask() }
             WindowAction("Quick Add to Parking Lot", key: "p", modifiers: [.command, .shift]) { model.showQuickPark = true }
+            // In the File menu because menus are searched in menu-bar order: from the Vision menu, Edit > Paste
+            // (which AppKit also matches for Shift-Cmd-V) would win. In-app only, not a system-wide hotkey,
+            // so Paste and Match Style keeps working in other apps.
+            WindowAction("New Goal…", key: "v", modifiers: [.command, .shift]) { model.showGoalQuickAdd = true }
         }
         CommandGroup(replacing: .importExport) {
             Button("Export as JSON…") { model.exportJSON() }
@@ -28,6 +32,24 @@ struct Top3Commands: Commands {
             Divider()
             Button("Delete Task") { model.deleteSelected() }
         }
+        CommandMenu("Vision") {
+            WindowAction("New Timeline", key: "t", modifiers: [.command, .shift, .option]) {
+                model.section = .vision
+                if let t = model.createBlankTimeline() { model.visionBoard.renamingTimelineID = t.id }
+            }
+            Divider()
+            Button("Zoom In") { if model.section == .vision { model.visionBoard.zoomIn() } }
+                .keyboardShortcut("=", modifiers: .command)
+            Button("Zoom Out") { if model.section == .vision { model.visionBoard.zoomOut() } }
+                .keyboardShortcut("-", modifiers: .command)
+            Button("Go to Today") { if model.section == .vision { model.visionBoard.goToToday() } }
+                .keyboardShortcut("t", modifiers: .command)
+            Divider()
+            Button("Show or Hide Archived Timelines") {
+                model.section = .vision
+                model.visionBoard.setShowArchived(!model.visionBoard.showArchived)
+            }
+        }
         CommandGroup(before: .sidebar) {
             WindowAction("Command Palette", key: "k", modifiers: .command) { model.showPalette.toggle() }
             WindowAction("Toggle Sidebar", key: "s", modifiers: [.command, .control]) {
@@ -41,6 +63,8 @@ struct Top3Commands: Commands {
                 Button(l.title) { model.section = .list(l) }
                     .keyboardShortcut(KeyEquivalent(Character(String(i + 1))), modifiers: [.command, .option])
             }
+            Button("Vision") { model.section = .vision }
+                .keyboardShortcut(KeyEquivalent(Character(String(ListKind.allCases.count + 1))), modifiers: [.command, .option])
             Divider()
         }
     }
