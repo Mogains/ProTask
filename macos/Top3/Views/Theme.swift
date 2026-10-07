@@ -52,6 +52,9 @@ enum Theme {
         /// The days before today, barely darker than the future.
         static let past = Color(nsColor: .dynamic(light: 0x000000, dark: 0x000000, lightAlpha: 0.012, darkAlpha: 0.12))
 
+        /// Behind the full-size image viewer: near-black in dark mode, near-white in light mode.
+        static let scrim = Color(nsColor: .dynamic(light: 0xFAFAFA, dark: 0x0A0A0B, lightAlpha: 0.96, darkAlpha: 0.94))
+
         /// Opacities applied to a timeline hue.
         enum Alpha {
             /// Bar outline.
@@ -66,6 +69,13 @@ enum Theme {
             static let todayLine: Double = 0.7
             /// The Today label's tint in the axis.
             static let todayFill: Double = 0.14
+            /// The metric graph's area: a soft ramp of the hue from the line down to nothing.
+            static let areaTop: Double = 0.24
+            static let areaBottom: Double = 0.0
+            /// The pointer's guide line on the metric graph.
+            static let chartGuide: Double = 0.5
+            /// The goal panel while images are dragged over it.
+            static let dropFill: Double = 0.06
         }
 
         private static let colors: [TimelineColor: Color] = Dictionary(uniqueKeysWithValues: TimelineColor.allCases.map {
@@ -192,8 +202,6 @@ enum Theme {
         static let revealPadding: CGFloat = 48
         /// Where today sits when the board opens or jumps to today (fraction of the track from the left).
         static let todayFraction: Double = 0.3
-        /// Goal summary panel beside the board.
-        static let panelWidth: CGFloat = 300
         /// The inline title field for a goal added by double-click.
         static let promptWidth: CGFloat = 260
         /// Scroll-wheel tuning: points per line for mice, zoom per point of Cmd-scroll.
@@ -201,6 +209,46 @@ enum Theme {
         static let scrollZoomRate: Double = 0.01
         /// Bounds for panning: this many years either side of today.
         static let panYears = 100
+    }
+
+    // MARK: Vision goal panel
+
+    enum GoalPanel {
+        /// The detail panel beside the board.
+        static let width: CGFloat = 344
+        /// The cover picture at the top of the panel.
+        static let coverHeight: CGFloat = 136
+        /// Image thumbnails per row.
+        static let thumbColumns = 3
+        /// The metric graph.
+        static let chartHeight: CGFloat = 112
+        static let chartLine: CGFloat = 2
+        /// The end dot (and hovered dot) on the graph, with a ring in the surface color.
+        static let chartDot: CGFloat = 8
+        static let chartRing: CGFloat = 2
+        /// Progress slider.
+        static let sliderKnob: CGFloat = 14
+        static let sliderHeight: CGFloat = 20
+        /// Metric number fields, and the unit field beside the name.
+        static let unitField: CGFloat = 72
+        static let logValueField: CGFloat = 72
+        /// Notes editor height range.
+        static let notesMinHeight: CGFloat = 96
+        static let notesMaxHeight: CGFloat = 320
+        /// The rail beside update log entries.
+        static let logDot: CGFloat = 7
+        static let logRailWidth: CGFloat = 12
+        /// The quote bar in rendered notes.
+        static let quoteBar: CGFloat = 2
+        /// Indent per nesting level in rendered lists.
+        static let listIndent: CGFloat = 14
+        /// Link and task pickers: list height.
+        static let pickerListHeight: CGFloat = 288
+        /// Image viewer: room around the picture, and the side buttons.
+        static let viewerPadding: CGFloat = 40
+        static let viewerButton: CGFloat = 32
+        /// Highlight while images are dragged over the panel.
+        static let dropStroke: CGFloat = 1.5
     }
 
     // MARK: Type
@@ -224,6 +272,12 @@ enum Theme {
         static let label = Theme.font(TextSize.caption, .medium)
         static let input = Theme.font(TextSize.input)
         static let mono = Font.system(size: TextSize.secondary).monospacedDigit()
+        /// Code in goal notes.
+        static let code = Font.system(size: TextSize.secondary, design: .monospaced)
+        /// Headings in rendered goal notes.
+        static let heading1 = Theme.font(TextSize.input, .semibold)
+        static let heading2 = Theme.font(TextSize.body, .semibold)
+        static let heading3 = Theme.font(TextSize.small, .semibold)
     }
 
     static func font(_ size: CGFloat, _ weight: Font.Weight = .regular) -> Font {

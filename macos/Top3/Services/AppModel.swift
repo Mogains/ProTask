@@ -857,14 +857,72 @@ final class AppModel {
                     self.visionBoard.setShowArchived(true)
                 }),
                 ("vision-quickadd", { show(.year); self.showGoalQuickAdd = true }),
+                ("vision-detail", { show(.year, select: "Run a half marathon", open: true) }),
+                ("vision-detail-2", {
+                    show(.year, select: "Run a half marathon", open: true)
+                    self.debugScrollGoalPanel(to: 0.4)
+                }),
+                ("vision-detail-3", {
+                    show(.year, select: "Run a half marathon", open: true)
+                    self.debugScrollGoalPanel(to: 0.75)
+                }),
+                ("vision-detail-4", {
+                    show(.year, select: "Run a half marathon", open: true)
+                    self.debugScrollGoalPanel(to: 1)
+                }),
+                ("vision-detail-tasks", {
+                    show(.quarter, select: "Ship the billing migration", open: true)
+                    self.debugScrollGoalPanel(to: 0.62)
+                }),
+                ("vision-detail-empty", { show(.year, select: "Publish the photo book", open: true) }),
+                ("vision-detail-empty-2", {
+                    show(.year, select: "Publish the photo book", open: true)
+                    self.debugScrollGoalPanel(to: 1)
+                }),
+                ("vision-viewer", {
+                    show(.year, select: "Run a half marathon", open: true)
+                    if let goal = self.allGoals().first(where: { $0.title == "Run a half marathon" }), self.goalImages(for: goal.id).count > 1 {
+                        self.visionBoard.viewer = ImageViewerRequest(goalID: goal.id, imageID: self.goalImages(for: goal.id)[1].id)
+                    }
+                }),
+                ("vision-link", {
+                    show(.year, select: "Run a half marathon", open: true)
+                    self.visionBoard.linkPicker = .goal
+                }),
+                ("vision-link-task", {
+                    show(.year, select: "Run a half marathon", open: true)
+                    self.visionBoard.linkPicker = .task
+                }),
                 ("vision-delete", {
                     show(.year)
                     self.visionBoard.prompt = self.visionTimelines().first { $0.name == "Career" }.map { .deleteTimeline($0.id) }
                 })]
     }
 
+    /// Scrolls the goal panel (the right-most scroll view in the main window) to a fraction of its height,
+    /// after the panel has laid out.
+    private func debugScrollGoalPanel(to fraction: CGFloat) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            guard let content = NSApp.windows.first(where: { $0.isVisible && $0.canBecomeMain })?.contentView else { return }
+            var found: [NSScrollView] = []
+            func walk(_ v: NSView) {
+                if let s = v as? NSScrollView, let doc = s.documentView, doc.frame.height > s.contentView.bounds.height { found.append(s) }
+                v.subviews.forEach(walk)
+            }
+            walk(content)
+            guard let scroll = found.max(by: { $0.convert($0.bounds, to: nil).minX < $1.convert($1.bounds, to: nil).minX }),
+                  let doc = scroll.documentView else { return }
+            let maxY = doc.frame.height - scroll.contentView.bounds.height
+            let y = doc.isFlipped ? maxY * fraction : maxY * (1 - fraction)
+            scroll.contentView.scroll(to: NSPoint(x: 0, y: y))
+            scroll.reflectScrolledClipView(scroll.contentView)
+        }
+    }
+
     /// Clears what a Vision snapshot opened, so the next one starts clean.
     private func resetVisionShot() {
+        visionBoard.linkPicker = nil
+        visionBoard.viewer = nil
         showGoalQuickAdd = false
         visionBoard.prompt = nil
         visionBoard.pending = nil

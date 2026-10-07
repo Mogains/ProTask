@@ -58,6 +58,10 @@ ICONS = {
     # Disclosure (Vision lane collapse)
     "chevron-right": poly((6, 3.5), (10.5, 8), (6, 12.5)),
     "chevron-down": poly((3.5, 6), (8, 10.5), (12.5, 6)),
+    "chevron-left": poly((10, 3.5), (5.5, 8), (10, 12.5)),
+    # Vision goal panel
+    "image":      BOX + poly((2.5, 11.5), (6, 8), (9.5, 11.5)) + poly((8.5, 10.5), (10.5, 8.5), (13.5, 11.5)) + dot(9.25, 4.5),
+    "link":       path("M6.5 5.5H5A2.5 2.5 0 0 0 5 10.5H6.5") + path("M9.5 5.5H11A2.5 2.5 0 0 1 11 10.5H9.5") + line(6, 8, 10, 8),
     # Brand mark (menu bar)
     "mark":       BOX + dot(9.5, 4, 2.5),
 }

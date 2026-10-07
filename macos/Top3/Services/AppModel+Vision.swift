@@ -1,5 +1,6 @@
 import AppKit
 import SwiftData
+import UniformTypeIdentifiers
 
 /// Vision: timelines, goals, progress logs, images and goal dependencies.
 /// Private to this Mac. Nothing here is shared, uploaded or logged, and toasts never show file paths.
@@ -174,6 +175,44 @@ extension AppModel {
         goal.syncTargetToCalendar = d.syncTargetToCalendar
     }
 
+    /// Edits a goal through its draft (trimmed and checked like any update). Does nothing if it was deleted meanwhile.
+    /// A metric that is only partly filled in is kept as it is, unless the change is to the metric itself.
+    func editGoal(_ id: UUID, _ change: (inout GoalDraft) -> Void) {
+        guard let goal = goal(id) else { return }
+        let before = goal.draft
+        var draft = before
+        change(&draft)
+        guard draft != before else { return }
+        let partial = (goal.metricName, goal.metricStart, goal.metricCurrent, goal.metricTarget, goal.metricUnit)
+        updateGoal(goal, with: draft)
+        if draft.metric == before.metric {
+            (goal.metricName, goal.metricStart, goal.metricCurrent, goal.metricTarget, goal.metricUnit) = partial
+            save()
+        }
+    }
+
+    /// Stores the metric fields as typed. The metric counts once start, current and target are all numbers.
+    func setMetricFields(_ id: UUID, name: String, start: Double?, current: Double?, target: Double?, unit: String) {
+        guard let goal = goal(id) else { return }
+        let finite: (Double?) -> Double? = { $0.flatMap { $0.isFinite ? $0 : nil } }
+        let fields = (name.trimmingCharacters(in: .whitespacesAndNewlines), finite(start), finite(current), finite(target),
+                      unit.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard fields != (goal.metricName, goal.metricStart, goal.metricCurrent, goal.metricTarget, goal.metricUnit) else { return }
+        (goal.metricName, goal.metricStart, goal.metricCurrent, goal.metricTarget, goal.metricUnit) = fields
+        goal.modifiedAt = Date()
+        save()
+    }
+
+    /// Selects a goal and opens it in the detail panel, panning the board to it.
+    func openGoal(_ id: UUID) {
+        guard let goal = goal(id) else { return }
+        selectGoal(id, open: true)
+        if let span = TimelineDates.span(type: goal.type, start: goal.startDate, target: goal.targetDate, createdAt: goal.createdAt,
+                                         calendar: .current) {
+            visionBoard.reveal(span)
+        }
+    }
+
     func setStatus(_ goal: Goal, _ status: GoalStatus) {
         guard goal.status != status else { return }
         goal.status = status
@@ -304,14 +343,20 @@ extension AppModel {
 
     // MARK: Log
 
-    /// Adds a dated note, remembering the progress and metric value at that moment.
+    /// Adds a dated note. It remembers the progress at that moment, and the metric value when one is given.
+    /// A value for the latest day so far becomes the metric's current value.
     @discardableResult
-    func addGoalLog(to goal: Goal, text: String, date: Date = Date()) -> GoalLog? {
+    func addGoalLog(to goal: Goal, text: String, date: Date = Date(), metricValue: Double? = nil) -> GoalLog? {
         let body = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !body.isEmpty else { return nil }
-        let log = GoalLog(goalID: goal.id, date: date, text: body)
+        let value = metricValue.flatMap { $0.isFinite ? $0 : nil }
+        guard GoalLogOrder.isValid(text: body, metricValue: value) else { return nil }
+        let log = GoalLog(goalID: goal.id, date: Calendar.current.startOfDay(for: date), text: body)
+        log.metricValue = value
+        if let value, goal.metric != nil {
+            let others = goalLogs(for: goal.id).filter { $0.metricValue != nil }.map(\.date)
+            if GoalLogOrder.updatesCurrent(entryDate: log.date, otherValueDates: others) { goal.metricCurrent = value }
+        }
         log.progress = effectiveProgress(of: goal)
-        log.metricValue = goal.metric?.current
         context.insert(log)
         goal.modifiedAt = Date()
         save()
@@ -391,12 +436,44 @@ extension AppModel {
 
     /// Adds the image on the clipboard to the goal.
     @discardableResult
-    func pasteImage(into goal: Goal) async -> GoalImage? {
-        guard let source = VisionImageStore.pasteboardImage() else {
+    func pasteImage(into goal: Goal, from pasteboard: NSPasteboard = .general) async -> GoalImage? {
+        guard let source = VisionImageStore.pasteboardImage(pasteboard) else {
             showToast(VisionImageStore.ImportError.nothingToPaste.errorDescription ?? "")
             return nil
         }
         return await addImage(to: goal, from: source)
+    }
+
+    /// Adds several images in turn, then says how many made it.
+    func addImages(_ sources: [VisionImageStore.Source], to goal: Goal) async {
+        let goalID = goal.id
+        var added = 0
+        for source in sources {
+            guard let goal = self.goal(goalID) else { return }
+            if await addImage(to: goal, from: source) != nil { added += 1 }
+        }
+        if added > 1 { showToast("Added \(added) images") }
+    }
+
+    /// The file picker: images only, several at once.
+    func chooseImages(for goal: Goal) {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.image]
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.message = "Choose images for this goal. They're resized and stripped of location data, and stay on this Mac."
+        panel.prompt = "Add"
+        let goalID = goal.id
+        let finish: (NSApplication.ModalResponse) -> Void = { [weak self] response in
+            guard let self, response == .OK, let goal = self.goal(goalID) else { return }
+            let urls = panel.urls
+            Task { await self.addImages(urls.map { .file($0) }, to: goal) }
+        }
+        if let window = NSApp.keyWindow ?? NSApp.mainWindow {
+            panel.beginSheetModal(for: window, completionHandler: finish)
+        } else {
+            finish(panel.runModal())
+        }
     }
 
     private func insertImage(_ stored: VisionImageStore.Stored, into goal: Goal) -> GoalImage {
@@ -468,7 +545,19 @@ extension AppModel {
         let billing = make("Ship the billing migration", on: career, .milestone, start: months(-1), target: days(40), mode: .auto)
         _ = make("Speak at a conference", on: career, .goal, .idea, target: months(14))
         let half = make("Run a half marathon", on: health, start: months(-2), target: months(4), mode: .auto,
-                        metric: GoalMetric(name: "Long run", start: 5, current: 12, target: 21.1, unit: "km"))
+                        metric: GoalMetric(name: "Long run", start: 5, current: 5, target: 21.1, unit: "km"),
+                        notes: """
+                        ## Why
+                        Something to train for that isn't the scale. The October race is **flat and local**.
+
+                        ## Plan
+                        - Three runs a week: one easy, one tempo, one long
+                        - Long run grows by *1 km* a week, every fourth week easier
+                        - [x] New shoes
+                        - [ ] Book a gait check
+
+                        > Slow is fine. Stopping is fine. Skipping the long run is not.
+                        """)
         _ = make("In bed by 11 on weeknights", on: health, .habitTarget, start: days(-30), target: months(2), progress: 60)
         let car = make("Pay off the car loan", on: finance, start: months(-6), target: months(8), mode: .auto,
                        metric: GoalMetric(name: "Balance", start: 14_000, current: 8_600, target: 0, unit: "USD"))
@@ -482,9 +571,9 @@ extension AppModel {
         // More across the past and the next few years, so every zoom level has something to show.
         _ = make("Mentor two new engineers", on: career, .goal, .done, start: months(-9), target: months(-2), progress: 100)
         _ = make("Promotion review", on: career, .milestone, .planned, target: months(5))
-        _ = make("Knee physio routine", on: health, .habitTarget, start: months(-3), target: days(-9), progress: 70)
+        let physio = make("Knee physio routine", on: health, .habitTarget, start: months(-3), target: days(-9), progress: 70)
         _ = make("Half marathon race day", on: health, .milestone, .planned, target: months(4))
-        _ = make("Run a full marathon", on: health, .goal, .idea, start: months(18), target: months(30))
+        let full = make("Run a full marathon", on: health, .goal, .idea, start: months(18), target: months(30))
         _ = make("Open a retirement account", on: finance, .milestone, .done, target: months(-4))
         if let life = createTimeline(from: TimelineTemplate.named("life")!) {
             _ = make("Move into the new flat", on: life, .milestone, .planned, target: days(52))
@@ -494,10 +583,22 @@ extension AppModel {
 
         if let billing, let lead { addDependency(upstream: billing, downstream: lead) }
         if let half {
-            for (offset, text) in [(-21, "First 10k without stopping."), (-9, "Long run up to 12k. Knees fine."), (-2, "Signed up for the October race.")] {
-                if let log = addGoalLog(to: half, text: text, date: days(offset)) { log.createdAt = days(offset) }
+            let entries: [(Int, String, Double?)] = [
+                (-49, "Long run 7k. Slow and steady.", 7), (-35, "8.5k on the river loop.", 8.5),
+                (-21, "First 10k without stopping.", 10), (-9, "Long run up to 12k. Knees fine.", 12),
+                (-4, "13k, easy pace the whole way.", 13), (-2, "Signed up for the October race.", nil),
+            ]
+            for (offset, text, value) in entries {
+                if let log = addGoalLog(to: half, text: text, date: days(offset), metricValue: value) { log.createdAt = days(offset) }
             }
             allTasks().first { $0.title == "Gym" }?.goalID = half.id
+            if let physio { addDependency(upstream: physio, downstream: half) }
+            if let full { addDependency(upstream: half, downstream: full) }
+            for color in [TimelineColor.mist, .sand, .sage] {
+                if let data = demoImageData(color), let stored = try? visionImageStore.importImage(data: data) {
+                    _ = insertImage(stored, into: half)
+                }
+            }
         }
         if let car { addGoalLog(to: car, text: "Extra payment from the bonus.", date: days(-12)) }
         if let lead { allTasks().first { $0.title == "Finish quarterly report" }?.goalID = lead.id }
@@ -510,22 +611,36 @@ extension AppModel {
                 done.completedAt = days(-3)
             }
         }
-        if let studio, let data = demoImageData(), let stored = try? visionImageStore.importImage(data: data) {
+        if let studio, let data = demoImageData(.clay), let stored = try? visionImageStore.importImage(data: data) {
             _ = insertImage(stored, into: studio)
         }
         save()
     }
 
-    /// A soft tonal ramp of one palette hue, larger than the 2000px limit so the downscale runs.
-    private func demoImageData() -> Data? {
+    /// A soft tonal picture in one palette hue: a ramp from the hue's dark to its light step, a low glow and a hazy
+    /// horizon. Larger than the 2000px limit, so the downscale runs.
+    private func demoImageData(_ color: TimelineColor) -> Data? {
         let width = 2400, height = 1600
         guard let space = CGColorSpace(name: CGColorSpace.sRGB),
               let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0, space: space,
                                   bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { return nil }
-        let pair = ColorTokens.timeline(TimelineColor.sage.rawValue)
-        let colors = [NSColor(hex: pair.dark).cgColor, NSColor(hex: pair.light).cgColor] as CFArray
-        guard let gradient = CGGradient(colorsSpace: space, colors: colors, locations: [0, 1]) else { return nil }
-        ctx.drawLinearGradient(gradient, start: .zero, end: CGPoint(x: width, y: height), options: [])
+        let pair = ColorTokens.timeline(color.rawValue)
+        let dark = NSColor(hex: pair.dark), light = NSColor(hex: pair.light)
+        let deep = dark.blended(withFraction: 0.55, of: .black) ?? dark
+        let pale = light.blended(withFraction: 0.5, of: .white) ?? light
+        let sky = [pale.cgColor, light.cgColor, dark.cgColor, deep.cgColor] as CFArray
+        guard let ramp = CGGradient(colorsSpace: space, colors: sky, locations: [0, 0.45, 0.62, 1]) else { return nil }
+        ctx.drawLinearGradient(ramp, start: CGPoint(x: 0, y: height), end: CGPoint(x: width / 3, y: 0),
+                               options: [.drawsBeforeStartLocation, .drawsAfterEndLocation])
+        let glow = [pale.withAlphaComponent(0.7).cgColor, pale.withAlphaComponent(0).cgColor] as CFArray
+        if let g = CGGradient(colorsSpace: space, colors: glow, locations: [0, 1]) {
+            let c = CGPoint(x: Double(width) * 0.68, y: Double(height) * 0.58)
+            ctx.drawRadialGradient(g, startCenter: c, startRadius: 0, endCenter: c, endRadius: Double(height) * 0.55, options: [])
+        }
+        let haze = [light.withAlphaComponent(0).cgColor, light.withAlphaComponent(0.55).cgColor, light.withAlphaComponent(0).cgColor] as CFArray
+        if let h = CGGradient(colorsSpace: space, colors: haze, locations: [0, 0.5, 1]) {
+            ctx.drawLinearGradient(h, start: CGPoint(x: 0, y: Double(height) * 0.3), end: CGPoint(x: 0, y: Double(height) * 0.46), options: [])
+        }
         guard let image = ctx.makeImage() else { return nil }
         return NSBitmapImageRep(cgImage: image).representation(using: .png, properties: [:])
     }

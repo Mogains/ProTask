@@ -7,7 +7,7 @@ Updated with every commit. Newest first in each section.
 **Long Term Vision, Phase 1: data and timelines** (Mac app)
 - [x] 1. Data model: timelines, goals, goal log, images (downscaled, thumbnails, EXIF/location stripped). Committed `2a2efb2`.
 - [x] 2. Timeline lanes view: zoom, pan, today marker, drag to move and resize, lane management, quick add. Committed as "Vision: timeline lanes view".
-- [ ] 3. Goal detail panel: notes, metric graph, images, links, update log
+- [x] 3. Goal detail panel: notes, metric graph, images, links, update log. Committed as "Vision: goal detail panel".
 - [ ] Phase 1 review: correctness, privacy, design system, light and dark UI pass
 
 ## Next
@@ -21,6 +21,7 @@ Updated with every commit. Newest first in each section.
 
 ## Done
 
+- Vision goal detail panel: clicking a goal now opens a full panel beside the board, edited in place. Title (Return saves, an empty title is refused), type, timeline, status, start and target dates with "4 months left", and progress (manual, or automatic from the metric). The metric has a name, unit, start, current and target, with a small line graph of logged values and the target as a line; hover reads out a point. Notes are Markdown, shown rendered (headings, lists, checklists, quotes, code, rules) and edited as plain text. Images come in by drag and drop, Cmd-V while the panel has focus, or the file picker; one is the cover, and clicking a thumbnail opens a full-size viewer where Left and Right move between images and Esc closes. Linked goals show what this goal depends on and what it is needed for; the picker dims choices that would make a loop and says why. Linked tasks can be ticked off or unlinked from the panel. The update log is newest first, and an entry can carry the metric's value for that day, which feeds the graph. Esc closes the panel, and it closes on its own if its goal is deleted. 19 new tests, 173 in total.
 - Vision timeline lanes view: a new Vision section in the sidebar (below Calendar, Option-Cmd-5) shows one lane per timeline under a shared date axis, with a today line. Zoom between decade, year, quarter and month with the header buttons, pinch, Cmd-scroll, Cmd-= and Cmd-- (or + and -); pan by dragging empty space or scrolling sideways; Today (Cmd-T) jumps back. Goals are rounded bars with a tonal progress fill, milestones are diamonds, and active goals past their date get a small terracotta dot. Drag a bar to move it, drag its edges to resize (whole days, never shorter than one day), click to open a summary beside the board, double-click empty lane space to type a new goal in place. Lane headers show the color, a collapse toggle and a short summary such as "3 active, 42%"; lanes can be renamed, recolored, reordered (menu or drag), archived (hidden behind Show archived) and deleted, and deleting a lane with goals asks where to move them first. New timeline offers Blank or six templates that only add the lane. Shift-Cmd-V opens a quick add goal sheet from any section. The keyboard covers it all: arrows move between goals, Option-arrows move the selected goal, Return opens, Delete asks, Esc closes. Only goals in view get drawn, and Reduce Motion turns zoom and pan animations into instant changes. 31 new tests for the date scale, axis ticks, culling, row packing, drag math, keyboard navigation and lane reordering, 154 in total.
 - Vision data model (`2a2efb2`): five SwiftData models (timelines, goals, logs, images, dependencies) plus a goal link on tasks, added as an automatic migration (tested on an older store: all tasks kept). Images are capped at 2000px with a 480px thumbnail, and every metadata block is removed, including the one ImageIO always writes. They're stored owner-only. JSON backups carry Vision records and image file names, and older backups still import. 23 new tests, 123 in total.
 - Calendar: runs on a throwaway store (tests, screenshots, demo data) never touch the real calendar
@@ -30,7 +31,8 @@ Updated with every commit. Newest first in each section.
 
 ## Known issues
 
-- Vision: clicking a goal opens a short summary beside the board for now. The full goal detail panel is item 3.
+- Vision: Cmd-V into the goal panel was tested by calling the paste code directly, because test runs have no key window to send the shortcut to. A quick check with a real image on the clipboard is still worth doing.
+- Vision: the goal panel has no linked routines yet. They come with the Routines section in Phase 3.
 - Vision: bars are stacked into rows once per zoom level, not per scroll position, so a lane can keep a row that is empty in the current view. That keeps bars from jumping between rows while you pan.
 - Vision: dragging a lane to reorder it lifts it over the others and shows where it will land, but the other lanes don't slide aside while you drag.
 - Vision: trackpad and scroll-wheel panning were tested by calling the board's scroll handler directly, because test runs can't send real scroll events to a window. A quick check with a real trackpad is still worth doing.

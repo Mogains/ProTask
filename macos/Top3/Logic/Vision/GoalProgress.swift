@@ -59,3 +59,31 @@ enum GoalProgress {
         return clamp(manual)
     }
 }
+
+/// Where a goal's shown progress comes from, for the line under the progress bar.
+enum ProgressSource: Equatable {
+    case done
+    case manual
+    case metric
+    case tasks(done: Int, total: Int)
+    /// Automatic, but there is nothing to measure yet: the manual number stands in.
+    case fallback
+
+    static func of(mode: ProgressMode, status: GoalStatus, metric: GoalMetric?, linkedDone: Int = 0, linkedTotal: Int = 0) -> ProgressSource {
+        if status == .done { return .done }
+        guard mode == .auto else { return .manual }
+        if let metric, metric.isValid { return .metric }
+        if linkedTotal > 0 { return .tasks(done: min(max(linkedDone, 0), linkedTotal), total: linkedTotal) }
+        return .fallback
+    }
+
+    var explanation: String {
+        switch self {
+        case .done: "Done goals show 100%."
+        case .manual: "Set by hand."
+        case .metric: "From the metric."
+        case let .tasks(done, total): "From linked tasks: \(done) of \(total) done."
+        case .fallback: "Nothing to measure yet, so the number set by hand stands in."
+        }
+    }
+}

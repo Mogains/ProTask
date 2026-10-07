@@ -14,6 +14,12 @@ enum VisionPrompt: Identifiable, Equatable {
     }
 }
 
+/// A goal's picture shown full size.
+struct ImageViewerRequest: Equatable {
+    var goalID: UUID
+    var imageID: UUID
+}
+
 /// A goal being added by double-clicking a lane: it exists once it has a title.
 struct PendingGoal: Equatable {
     var laneID: UUID
@@ -31,8 +37,18 @@ final class VisionBoardState {
     private(set) var trackWidth: Double = 0
     private(set) var collapsed: Set<UUID> = []
     private(set) var showArchived = false
-    /// The goal whose summary panel is open.
-    var openGoalID: UUID?
+    /// The goal open in the detail panel.
+    var openGoalID: UUID? {
+        didSet {
+            guard openGoalID != oldValue else { return }
+            if let v = viewer, v.goalID != openGoalID { viewer = nil }
+            if linkPicker != nil { linkPicker = nil }
+        }
+    }
+    /// The full-size image viewer over the board.
+    var viewer: ImageViewerRequest?
+    /// The link picker sheet for the open goal.
+    var linkPicker: LinkPickerKind?
     var renamingTimelineID: UUID?
     var prompt: VisionPrompt?
     var pending: PendingGoal?
@@ -176,10 +192,11 @@ final class VisionBoardState {
 
     func requestFocus() { focusRequest += 1 }
 
-    /// Closes whatever is open on the board: the inline prompt, a rename, then the summary panel.
+    /// Closes whatever is open on the board: the image viewer, the inline prompt, a rename, then the detail panel.
     /// Returns false when there was nothing to close.
     @discardableResult
     func dismissTop() -> Bool {
+        if viewer != nil { viewer = nil; return true }
         if pending != nil { pending = nil; return true }
         if renamingTimelineID != nil { renamingTimelineID = nil; return true }
         if openGoalID != nil { openGoalID = nil; return true }

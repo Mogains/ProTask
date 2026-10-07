@@ -29,6 +29,7 @@ struct PlacedGoal: Identifiable, Equatable {
 /// Vision: long-range goals on timeline lanes. Private to this Mac.
 struct VisionScreen: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// Every task (not narrowed by the tag filter), for progress from linked tasks.
     let tasks: [TaskItem]
     @Query(sort: \VisionTimeline.sortOrder) private var timelines: [VisionTimeline]
@@ -44,14 +45,27 @@ struct VisionScreen: View {
                 HStack(spacing: 0) {
                     TimelineBoard(lanes: data.lanes, goals: data.goals, archivedCount: data.archivedCount)
                     if let id = board.openGoalID, let goal = goals.first(where: { $0.id == id }) {
-                        Hairline(vertical: true)
-                        GoalSummaryPanel(goal: goal, progress: data.progress[id] ?? goal.progress)
-                            .frame(width: Theme.Timeline.panelWidth)
-                            .frame(maxHeight: .infinity)
-                            .background(Theme.Palette.surface)
-                            .transition(.opacity)
+                        let linked = data.linked[id] ?? (0, 0)
+                        HStack(spacing: 0) {
+                            Hairline(vertical: true)
+                            GoalDetailPanel(goal: goal, progress: data.progress[id] ?? goal.progress,
+                                            linkedDone: linked.done, linkedTotal: linked.total)
+                                .id(goal.id)
+                                .frame(width: Theme.GoalPanel.width)
+                        }
+                        .frame(maxHeight: .infinity)
+                        .background(Theme.Palette.surface)
+                        // Slides in from the right; with Reduce Motion it fades instead.
+                        .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
                     }
                 }
+                .animation(reduceMotion ? Theme.Motion.standard : Theme.Motion.list, value: board.openGoalID != nil)
+                .overlay {
+                    if let request = board.viewer {
+                        GoalImageViewer(request: request).transition(.opacity)
+                    }
+                }
+                .animation(Theme.Motion.standard, value: board.viewer)
             }
         }
         .sheet(item: $board.prompt) { prompt in
@@ -63,6 +77,7 @@ struct VisionScreen: View {
         var lanes: [LaneInfo]
         var goals: [UUID: [PlacedGoal]]
         var progress: [UUID: Int]
+        var linked: [UUID: (done: Int, total: Int)]
         var archivedCount: Int
     }
 
@@ -98,7 +113,7 @@ struct VisionScreen: View {
             LaneInfo(id: t.id, name: t.name, color: t.color, archived: t.archived,
                      summary: LaneSummary.make((byLane[t.id] ?? []).map(\.goal), calendar: cal))
         }
-        return BoardData(lanes: lanes, goals: byLane, progress: progress, archivedCount: timelines.filter(\.archived).count)
+        return BoardData(lanes: lanes, goals: byLane, progress: progress, linked: linked, archivedCount: timelines.filter(\.archived).count)
     }
 }
 
