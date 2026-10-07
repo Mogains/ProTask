@@ -10,13 +10,14 @@ struct SmartTaskField: View {
     var leadingIcon: IconName?
     var bordered = true
     var focusOnAppear = false
+    var focusRequest = 0
     var onSubmit: () -> Void = {}
 
     var body: some View {
         let parsed = TaskParser.parse(CaptureRouting.route(text).text, detectDates: detectDates)
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
             InputField(placeholder: placeholder, text: $text, font: font, leadingIcon: leadingIcon, bordered: bordered,
-                       focusOnAppear: focusOnAppear, onDeleteKey: {
+                       focusOnAppear: focusOnAppear, focusRequest: focusRequest, onDeleteKey: {
                            guard parsed.dueDate != nil, parsed.dateAtEnd else { return false }
                            withAnimation(Theme.Motion.hover) { detectDates = false }
                            return true

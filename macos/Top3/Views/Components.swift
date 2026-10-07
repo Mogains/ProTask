@@ -229,6 +229,8 @@ struct InputField: View {
     var bordered = true
     var axis: Axis = .horizontal
     var focusOnAppear = false
+    /// Changing this value moves keyboard focus into the field (e.g. a shortcut that jumps to it).
+    var focusRequest = 0
     /// Return true to swallow a Backspace (used to dismiss a parsed date).
     var onDeleteKey: (() -> Bool)?
     var onSubmit: () -> Void = {}
@@ -256,6 +258,7 @@ struct InputField: View {
                           lineWidth: Theme.Size.hairline))
         .animation(Theme.Motion.hover, value: focused)
         .onAppear { if focusOnAppear { DispatchQueue.main.async { focused = true } } }
+        .onChange(of: focusRequest) { focused = true }
         .background(KeyMonitor(active: focused && onDeleteKey != nil) { event in
             event.keyCode == KeyMonitor.backspace && event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty
                 && onDeleteKey?() == true

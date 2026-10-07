@@ -3,10 +3,16 @@ import SwiftUI
 
 /// Full-window morning planning: rolled-over picks, overdue and due-today tasks, today's calendar.
 /// Pick the Top 3 by clicking, or with arrow keys and 1/2/3. Return starts the day, Esc skips it.
+/// New tasks can be added here (N jumps to the field); they're listed under "Added just now" to pick from.
 struct PlanningView: View {
     @Environment(AppModel.self) private var model
     let tasks: [TaskItem]
     @State private var highlight = 0
+    @State private var newTask = ""
+    @State private var detectDates = true
+    @State private var focusAdd = 0
+    /// Tasks added on this screen, newest first, so they can go straight into the Top 3.
+    @State private var addedIDs: [UUID] = []
 
     var body: some View {
         let groups = candidateGroups
@@ -31,8 +37,10 @@ struct PlanningView: View {
                 HStack(alignment: .top, spacing: Theme.Space.xxl) {
                     VStack(alignment: .leading, spacing: Theme.Space.xl) {
                         Top3Block(pins: model.pinned(in: tasks))
+                        SmartTaskField(placeholder: "Add a task   ~ nice   ? idea", text: $newTask, detectDates: $detectDates,
+                                       leadingIcon: .add, focusRequest: focusAdd) { addTask() }
                         if flat.isEmpty {
-                            EmptyLine(text: "Nothing rolled over or due today. Pick from your lists or start the day.")
+                            EmptyLine(text: "Nothing rolled over or due today. Add a task above, pick from your lists, or start the day.")
                         }
                         ForEach(groups, id: \.title) { group in
                             VStack(alignment: .leading, spacing: 0) {
@@ -46,7 +54,7 @@ struct PlanningView: View {
                                 }
                             }
                         }
-                        Text("↑ ↓ to move   1 2 3 to place   return to start the day   esc to skip")
+                        Text("n to add a task   ↑ ↓ to move   1 2 3 to place   return to start the day   esc to skip")
                             .font(Theme.Fonts.secondary)
                             .foregroundStyle(Theme.Palette.textTertiary)
                     }
@@ -67,6 +75,17 @@ struct PlanningView: View {
         .background(Theme.Palette.background)
         .ignoresSafeArea()
         .background(KeyMonitor(active: model.editor == nil && !model.showPalette) { event in
+            // While typing in the add field, keys belong to the field; Esc just leaves it.
+            if let window = NSApp.keyWindow, window.firstResponder is NSTextView {
+                guard event.keyCode == KeyMonitor.escape else { return false }
+                window.makeFirstResponder(nil)
+                return true
+            }
+            if event.charactersIgnoringModifiers?.lowercased() == "n",
+               event.modifierFlags.intersection([.command, .control, .option]).isEmpty {
+                focusAdd += 1
+                return true
+            }
             switch event.keyCode {
             case KeyMonitor.down: highlight = min(highlight + 1, max(flat.count - 1, 0)); return true
             case KeyMonitor.up: highlight = max(highlight - 1, 0); return true
@@ -81,20 +100,35 @@ struct PlanningView: View {
         })
     }
 
+    /// Adds the typed task with the same parsing as quick add ("~" Nice to do, "?" Parking Lot, dates, "!!!", "30m").
+    private func addTask() {
+        let toList = CaptureRouting.route(newTask).list != .parkingLot
+        let before = model.selectedTaskID
+        guard model.capture(newTask, detectDates: detectDates) else { return }
+        // addTask selects the new task; ideas go to the Parking Lot and aren't Top 3 candidates.
+        if toList, let id = model.selectedTaskID, id != before {
+            withAnimation(Theme.Motion.list) { addedIDs.insert(id, at: 0) }
+        }
+        newTask = ""
+    }
+
     private struct Group { let title: String; let tasks: [TaskItem] }
 
     private var candidateGroups: [Group] {
         let open = tasks.filter { !$0.isCompleted && !$0.isIdea }
+        let byID = Dictionary(uniqueKeysWithValues: open.map { ($0.id, $0) })
+        let added = addedIDs.compactMap { byID[$0] }
         let rolledIDs = Set(Rollover.decode(model.dayLog(model.today).rolledOverRaw))
-        let rolled = open.filter { rolledIDs.contains($0.id) }
-        let used = Set(rolled.map(\.id))
+        let rolled = open.filter { rolledIDs.contains($0.id) && !addedIDs.contains($0.id) }
+        let used = Set(rolled.map(\.id)).union(addedIDs)
         let overdue = TaskSorting.sorted(open.filter { t in
             !used.contains(t.id) && (t.dueDate.map { DayKey.dateKey($0) < model.today } ?? false)
         })
         let dueToday = TaskSorting.sorted(open.filter { t in
             !used.contains(t.id) && (t.dueDate.map { DayKey.dateKey($0) == model.today } ?? false)
         })
-        return [Group(title: "Rolled over from yesterday", tasks: rolled),
+        return [Group(title: "Added just now", tasks: added),
+                Group(title: "Rolled over from yesterday", tasks: rolled),
                 Group(title: "Overdue", tasks: overdue),
                 Group(title: "Due today", tasks: dueToday)].filter { !$0.tasks.isEmpty }
     }
