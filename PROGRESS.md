@@ -5,7 +5,7 @@ Updated with every commit. Newest first in each section.
 ## In progress
 
 **Long Term Vision, Phase 1: data and timelines** (Mac app)
-- [ ] 1. Data model: timelines, goals, goal log, images (downscaled, thumbnails, EXIF/location stripped)
+- [ ] 1. Data model: timelines, goals, goal log, images (downscaled, thumbnails, EXIF/location stripped). *Working: verifying image metadata is fully stripped.*
 - [ ] 2. Timeline lanes view: zoom, pan, today marker, drag to move and resize, lane management, quick add
 - [ ] 3. Goal detail panel: notes, metric graph, images, links, update log
 - [ ] Phase 1 review: correctness, privacy, design system, light and dark UI pass
@@ -28,7 +28,7 @@ Updated with every commit. Newest first in each section.
 
 ## Known issues
 
-- Not pushed: the GitHub login lacks the `workflow` scope. Run `gh auth refresh -h github.com -s workflow`, then `git push`.
+- Commits stay local; pushing is up to you. If you push, the GitHub login first needs the `workflow` scope: `gh auth refresh -h github.com -s workflow`.
 - Google sign-in inside the AI chat panel may still be refused by Google. Email sign-in works.
 - Quick add goal (Cmd-Shift-V) works inside ProTask only, not system-wide, so it doesn't break Paste and Match Style in other apps.
 - Vision item 18: there is no MCP server in this project, so the MCP tools are skipped. The chat snapshot gets its Vision section.
