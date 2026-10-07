@@ -30,7 +30,10 @@ final class CalendarService {
     /// Called when the event store changes (an edit in Calendar.app, or one of our own saves).
     @ObservationIgnored var onStoreChanged: (() -> Void)?
 
-    var hasAccess: Bool { status == .fullAccess }
+    /// Runs on a throwaway store (tests, screenshots, demo data) never touch the real calendar.
+    static let isThrowawayRun = ProcessInfo.processInfo.environment["TOP3_STORE_PATH"] != nil
+
+    var hasAccess: Bool { status == .fullAccess && !Self.isThrowawayRun }
 
     init() {
         observer = NotificationCenter.default.addObserver(forName: .EKEventStoreChanged, object: store, queue: .main) { [weak self] _ in
