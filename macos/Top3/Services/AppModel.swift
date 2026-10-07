@@ -95,12 +95,15 @@ final class AppModel {
         // Owner-only: the store, its -wal/-shm journals, widget.json and the default Backups folder.
         FilePermissions.lockDown(dir)
         FilePermissions.lockDown(dir.appending(path: "Backups", directoryHint: .isDirectory))
+        FilePermissions.lockDown(VisionImageStore.defaultFolder())
         // TOP3_STORE_PATH lets tests and screenshots use a throwaway database.
         let storeURL = ProcessInfo.processInfo.environment["TOP3_STORE_PATH"].map { URL(fileURLWithPath: $0) }
             ?? dir.appending(path: "Top3.store")
         let config = ModelConfiguration(url: storeURL)
         do {
-            container = try ModelContainer(for: TaskItem.self, ListSetting.self, DayLog.self, FocusSession.self, EventLink.self, SyncRecord.self, configurations: config)
+            container = try ModelContainer(for: TaskItem.self, ListSetting.self, DayLog.self, FocusSession.self, EventLink.self, SyncRecord.self,
+                                           VisionTimeline.self, Goal.self, GoalLog.self, GoalImage.self, GoalDependency.self,
+                                           configurations: config)
         } catch {
             // Only the error domain and code: the full error can include file paths and stored values.
             let ns = error as NSError
@@ -730,6 +733,12 @@ final class AppModel {
                 try? rep.representation(using: .png, properties: [:])?
                     .write(to: URL(fileURLWithPath: dir).appending(path: "icons-\(appearance == .darkAqua ? "dark" : "light").png"))
             }
+            let palette = ImageRenderer(content: TimelinePaletteSheet().environment(\.colorScheme, appearance == .darkAqua ? .dark : .light))
+            palette.scale = 2
+            if let tiff = palette.nsImage?.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
+                try? rep.representation(using: .png, properties: [:])?
+                    .write(to: URL(fileURLWithPath: dir).appending(path: "vision-palette-\(appearance == .darkAqua ? "dark" : "light").png"))
+            }
         }
         do {
             let r = ImageRenderer(content: MenuBarQuickAdd().environment(self).modelContainer(container)
@@ -749,6 +758,11 @@ final class AppModel {
                 f.tasks.sort { $0.id.uuidString < $1.id.uuidString }
                 f.dayLogs.sort { $0.day < $1.day }
                 f.listSettings.sort { $0.listRaw < $1.listRaw }
+                f.vision?.timelines.sort { $0.id.uuidString < $1.id.uuidString }
+                f.vision?.goals.sort { $0.id.uuidString < $1.id.uuidString }
+                f.vision?.logs.sort { $0.id.uuidString < $1.id.uuidString }
+                f.vision?.images.sort { $0.id.uuidString < $1.id.uuidString }
+                f.vision?.dependencies.sort { $0.id.uuidString < $1.id.uuidString }
                 return try? f.encoded()
             }
             let same = canonical(before) == canonical(after)
@@ -857,6 +871,7 @@ final class AppModel {
         addTask(TaskDraft(title: "Contract redlines", list: .waitingOn, waitingOn: "Legal", followUpDate: cal.startOfDay(for: now)))
         addTask(TaskDraft(title: "Logo options", list: .waitingOn, waitingOn: "Maya",
                           followUpDate: cal.date(byAdding: .day, value: 4, to: cal.startOfDay(for: now))))
+        seedVisionDemoData()
         refreshDayLog()
         selectedTaskID = nil
         save()

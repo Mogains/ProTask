@@ -32,6 +32,24 @@ enum Theme {
         static let nsBackground = ColorTokens.color(ColorTokens.background)
     }
 
+    // MARK: Vision
+
+    enum Vision {
+        /// A timeline's hue: dots, bars, lane edges and data marks.
+        static func color(_ c: TimelineColor) -> Color { colors[c] ?? Palette.accent }
+        /// The same hue as a soft flat tint, for lane and card backgrounds.
+        static func fill(_ c: TimelineColor) -> Color { fills[c] ?? Palette.hover }
+
+        private static let colors: [TimelineColor: Color] = Dictionary(uniqueKeysWithValues: TimelineColor.allCases.map {
+            ($0, Color(nsColor: ColorTokens.color(ColorTokens.timeline($0.rawValue))))
+        })
+        private static let fills: [TimelineColor: Color] = Dictionary(uniqueKeysWithValues: TimelineColor.allCases.map {
+            let p = ColorTokens.timeline($0.rawValue)
+            return ($0, Color(nsColor: .dynamic(light: p.light, dark: p.dark,
+                                                lightAlpha: ColorTokens.timelineFillAlpha.light, darkAlpha: ColorTokens.timelineFillAlpha.dark)))
+        })
+    }
+
     // MARK: Spacing (4pt grid)
 
     enum Space {

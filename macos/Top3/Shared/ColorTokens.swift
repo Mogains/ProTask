@@ -13,6 +13,25 @@ enum ColorTokens {
     static let accent: Pair = (0x5B6283, 0x8C93B5)
     static let accentForeground: Pair = (0xFFFFFF, 0x0F0F10)
 
+    // MARK: Vision timeline palette
+    // Eight low-saturation hues, keyed by TimelineColor name. Light values hold 4:1 or better on white,
+    // dark values on the near-black background. Soft fills reuse the same hue at `timelineFillAlpha`.
+
+    static let timelinePalette: [String: Pair] = [
+        "slate": (0x5F7088, 0x8F9EB3),
+        "mist": (0x4F7A7B, 0x80A8A7),
+        "sage": (0x5D7A5B, 0x8FAA8B),
+        "sand": (0x7F744A, 0xB0A47A),
+        "clay": (0x96664D, 0xC09379),
+        "rose": (0x93606B, 0xBE8C96),
+        "plum": (0x73668E, 0xA497BD),
+        "stone": (0x6F6B66, 0x9F9B95),
+    ]
+    static let timelineFillAlpha: (light: CGFloat, dark: CGFloat) = (0.15, 0.18)
+    static let timelineFallback: Pair = (0x5F7088, 0x8F9EB3)
+
+    static func timeline(_ name: String) -> Pair { timelinePalette[name] ?? timelineFallback }
+
     static func color(_ p: Pair) -> NSColor { .dynamic(light: p.light, dark: p.dark) }
 }
 

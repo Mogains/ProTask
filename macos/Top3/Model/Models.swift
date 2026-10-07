@@ -45,6 +45,8 @@ final class TaskItem {
     var unscheduled: Bool = false
     /// Last edit in ProTask to something its calendar events show. Decides two-way sync conflicts.
     var modifiedAt: Date?
+    /// The Vision goal this task moves forward, if any. Cleared when the goal is deleted.
+    var goalID: UUID?
 
     init(title: String, list: ListKind, position: Double) {
         self.title = title

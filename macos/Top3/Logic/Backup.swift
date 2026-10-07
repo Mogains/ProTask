@@ -12,6 +12,9 @@ struct BackupFile: Codable, Equatable {
     var dayLogs: [DayLogDTO]
     var listSettings: [ListSettingDTO]
     var focusSessions: [FocusDTO]
+    /// Vision timelines, goals, logs, image references and dependencies (newer backups). Image bytes are never included,
+    /// only the file names in the VisionImages folder. Nil in backups made before Vision.
+    var vision: VisionDTO? = nil
 
     struct TaskDTO: Codable, Equatable {
         var id: UUID
@@ -41,6 +44,8 @@ struct BackupFile: Codable, Equatable {
         var links: [LinkDTO]? = nil
         /// Event deleted in Calendar (newer backups).
         var unscheduled: Bool? = nil
+        /// The Vision goal the task is linked to (newer backups).
+        var goalID: UUID? = nil
     }
 
     struct LinkDTO: Codable, Equatable {
@@ -72,6 +77,78 @@ struct BackupFile: Codable, Equatable {
         var taskTitle: String
         var start: Date
         var seconds: Int
+    }
+
+    struct VisionDTO: Codable, Equatable {
+        var timelines: [TimelineDTO]
+        var goals: [GoalDTO]
+        var logs: [GoalLogDTO]
+        var images: [GoalImageDTO]
+        var dependencies: [GoalDependencyDTO]
+    }
+
+    struct TimelineDTO: Codable, Equatable {
+        var id: UUID
+        var name: String
+        var details: String
+        var colorRaw: String
+        var sortOrder: Double
+        var archived: Bool
+        var createdAt: Date
+        var modifiedAt: Date
+    }
+
+    struct GoalDTO: Codable, Equatable {
+        var id: UUID
+        var timelineID: UUID
+        var title: String
+        var notes: String
+        var typeRaw: String
+        var statusRaw: String
+        var startDate: Date?
+        var targetDate: Date?
+        var progress: Int
+        var progressModeRaw: String
+        var metricName: String
+        var metricStart: Double?
+        var metricCurrent: Double?
+        var metricTarget: Double?
+        var metricUnit: String
+        var coverImageID: UUID?
+        var sortOrder: Double
+        var createdAt: Date
+        var modifiedAt: Date
+        var syncTargetToCalendar: Bool
+    }
+
+    struct GoalLogDTO: Codable, Equatable {
+        var id: UUID
+        var goalID: UUID
+        var date: Date
+        var text: String
+        var progress: Int?
+        var metricValue: Double?
+        var createdAt: Date
+    }
+
+    /// A reference to an image file: its name only, never its bytes or a path.
+    struct GoalImageDTO: Codable, Equatable {
+        var id: UUID
+        var goalID: UUID
+        var fileName: String
+        var thumbnailFileName: String
+        var pixelWidth: Int
+        var pixelHeight: Int
+        var caption: String
+        var sortOrder: Double
+        var createdAt: Date
+    }
+
+    struct GoalDependencyDTO: Codable, Equatable {
+        var id: UUID
+        var upstreamID: UUID
+        var downstreamID: UUID
+        var createdAt: Date
     }
 
     /// ISO 8601 with fractional seconds, so a round trip loses nothing.
@@ -115,6 +192,35 @@ struct BackupFile: Codable, Equatable {
             case .newerVersion: "That backup was made by a newer version of ProTask."
             }
         }
+    }
+}
+
+extension BackupFile.VisionDTO {
+    /// What a restore keeps: image references with plain file names only (never paths), logs, images and dependencies
+    /// whose goals are in the backup, covers that point at the goal's own images, and no duplicate or looping dependencies.
+    func sanitized() -> Self {
+        let goalIDs = Set(goals.map(\.id))
+        var out = self
+        out.logs = logs.filter { goalIDs.contains($0.goalID) }
+        out.images = images.filter {
+            goalIDs.contains($0.goalID) && VisionImageFiles.isSafeName($0.fileName)
+                && ($0.thumbnailFileName.isEmpty || VisionImageFiles.isSafeName($0.thumbnailFileName))
+        }
+        let imageOwner = Dictionary(out.images.map { ($0.id, $0.goalID) }, uniquingKeysWith: { a, _ in a })
+        out.goals = goals.map { g in
+            var g = g
+            if let cover = g.coverImageID, imageOwner[cover] != g.id { g.coverImageID = nil }
+            return g
+        }
+        var edges: [GoalEdge] = []
+        out.dependencies = dependencies.filter { d in
+            let edge = GoalEdge(upstream: d.upstreamID, downstream: d.downstreamID)
+            guard goalIDs.contains(d.upstreamID), goalIDs.contains(d.downstreamID), !edges.contains(edge),
+                  !GoalGraph.wouldCreateCycle(adding: edge, to: edges) else { return false }
+            edges.append(edge)
+            return true
+        }
+        return out
     }
 }
 

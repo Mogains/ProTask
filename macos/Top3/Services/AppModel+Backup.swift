@@ -24,7 +24,7 @@ extension AppModel {
                                links: (t.links ?? []).sorted { $0.kindRaw < $1.kindRaw }.map {
                                    BackupFile.LinkDTO(kindRaw: $0.kindRaw, eventIdentifier: $0.eventIdentifier, externalIdentifier: $0.externalIdentifier,
                                                       contentHash: $0.contentHash, remoteModifiedAt: $0.remoteModifiedAt, lastSyncedAt: $0.lastSyncedAt)
-                               }, unscheduled: t.unscheduled ? true : nil)
+                               }, unscheduled: t.unscheduled ? true : nil, goalID: t.goalID)
         }
         let logs = ((try? context.fetch(FetchDescriptor<DayLog>())) ?? []).map {
             BackupFile.DayLogDTO(day: $0.day, top3Complete: $0.top3Complete, promptDismissed: $0.promptDismissed,
@@ -34,7 +34,38 @@ extension AppModel {
         let sessions = ((try? context.fetch(FetchDescriptor<FocusSession>())) ?? []).map {
             BackupFile.FocusDTO(id: $0.id, taskID: $0.taskID, taskTitle: $0.taskTitle, start: $0.start, seconds: $0.seconds)
         }
-        return BackupFile(exportedAt: Date(), tasks: tasks, dayLogs: logs, listSettings: settings, focusSessions: sessions)
+        return BackupFile(exportedAt: Date(), tasks: tasks, dayLogs: logs, listSettings: settings, focusSessions: sessions,
+                          vision: makeVisionBackup())
+    }
+
+    /// Vision records for the backup. Images are referenced by file name only; their bytes are not included.
+    func makeVisionBackup() -> BackupFile.VisionDTO {
+        func all<T: PersistentModel>(_ type: T.Type) -> [T] { (try? context.fetch(FetchDescriptor<T>())) ?? [] }
+        return BackupFile.VisionDTO(
+            timelines: all(VisionTimeline.self).sorted { $0.sortOrder < $1.sortOrder }.map {
+                .init(id: $0.id, name: $0.name, details: $0.details, colorRaw: $0.colorRaw, sortOrder: $0.sortOrder,
+                      archived: $0.archived, createdAt: $0.createdAt, modifiedAt: $0.modifiedAt)
+            },
+            goals: all(Goal.self).sorted { $0.sortOrder < $1.sortOrder }.map {
+                .init(id: $0.id, timelineID: $0.timelineID, title: $0.title, notes: $0.notes, typeRaw: $0.typeRaw,
+                      statusRaw: $0.statusRaw, startDate: $0.startDate, targetDate: $0.targetDate, progress: $0.progress,
+                      progressModeRaw: $0.progressModeRaw, metricName: $0.metricName, metricStart: $0.metricStart,
+                      metricCurrent: $0.metricCurrent, metricTarget: $0.metricTarget, metricUnit: $0.metricUnit,
+                      coverImageID: $0.coverImageID, sortOrder: $0.sortOrder, createdAt: $0.createdAt, modifiedAt: $0.modifiedAt,
+                      syncTargetToCalendar: $0.syncTargetToCalendar)
+            },
+            logs: all(GoalLog.self).sorted { $0.date < $1.date }.map {
+                .init(id: $0.id, goalID: $0.goalID, date: $0.date, text: $0.text, progress: $0.progress,
+                      metricValue: $0.metricValue, createdAt: $0.createdAt)
+            },
+            images: all(GoalImage.self).sorted { $0.sortOrder < $1.sortOrder }.map {
+                .init(id: $0.id, goalID: $0.goalID, fileName: $0.fileName, thumbnailFileName: $0.thumbnailFileName,
+                      pixelWidth: $0.pixelWidth, pixelHeight: $0.pixelHeight, caption: $0.caption, sortOrder: $0.sortOrder,
+                      createdAt: $0.createdAt)
+            },
+            dependencies: all(GoalDependency.self).sorted { $0.createdAt < $1.createdAt }.map {
+                .init(id: $0.id, upstreamID: $0.upstreamID, downstreamID: $0.downstreamID, createdAt: $0.createdAt)
+            })
     }
 
     // MARK: Export
@@ -108,6 +139,7 @@ extension AppModel {
             t.remindAt = d.remindAt; t.recurrenceRaw = d.recurrenceRaw; t.seriesID = d.seriesID; t.nextOccurrenceID = d.nextOccurrenceID
             t.actualSeconds = d.actualSeconds; t.waitingOn = d.waitingOn; t.followUpDate = d.followUpDate; t.tagsRaw = d.tagsRaw
             t.unscheduled = d.unscheduled ?? false
+            t.goalID = d.goalID
             context.insert(t)
             for l in d.links ?? [] {
                 let link = EventLink(kind: LinkKind(rawValue: l.kindRaw) ?? .due, eventIdentifier: l.eventIdentifier)
@@ -131,6 +163,10 @@ extension AppModel {
             s.id = d.id
             context.insert(s)
         }
+        if let vision = file.vision { restoreVision(vision) }
+        // A task never keeps a link to a goal that isn't in the restored data (for example from a hand-edited file).
+        let goalIDs = Set(file.vision.map { $0.goals.map(\.id) } ?? allGoals().map(\.id))
+        for t in allTasks() where t.goalID.map({ !goalIDs.contains($0) }) ?? false { t.goalID = nil }
         save()
         migrateLegacyEventLinks() // older backups carry a single calendarEventID
         reloadListSettings()
@@ -140,6 +176,48 @@ extension AppModel {
         }
         runMorningReset()
         syncAllEvents()
+    }
+
+    /// Replaces the Vision records with the backup's. Backups made before Vision (no `vision` section) leave Vision as it is.
+    /// Image files are never deleted here: the backup refers to them by name, and the pre-import backup may still need them.
+    private func restoreVision(_ dto: BackupFile.VisionDTO) {
+        let v = dto.sanitized()
+        try? context.delete(model: VisionTimeline.self)
+        try? context.delete(model: Goal.self)
+        try? context.delete(model: GoalLog.self)
+        try? context.delete(model: GoalImage.self)
+        try? context.delete(model: GoalDependency.self)
+        for d in v.timelines {
+            let t = VisionTimeline(name: d.name, details: d.details, color: TimelineColor(named: d.colorRaw), sortOrder: d.sortOrder)
+            t.id = d.id; t.colorRaw = d.colorRaw; t.archived = d.archived; t.createdAt = d.createdAt; t.modifiedAt = d.modifiedAt
+            context.insert(t)
+        }
+        for d in v.goals {
+            let g = Goal(title: d.title, timelineID: d.timelineID, sortOrder: d.sortOrder)
+            g.id = d.id; g.notes = d.notes; g.typeRaw = d.typeRaw; g.statusRaw = d.statusRaw
+            g.startDate = d.startDate; g.targetDate = d.targetDate; g.progress = GoalProgress.clamp(d.progress)
+            g.progressModeRaw = d.progressModeRaw; g.metricName = d.metricName; g.metricStart = d.metricStart
+            g.metricCurrent = d.metricCurrent; g.metricTarget = d.metricTarget; g.metricUnit = d.metricUnit
+            g.coverImageID = d.coverImageID; g.createdAt = d.createdAt; g.modifiedAt = d.modifiedAt
+            g.syncTargetToCalendar = d.syncTargetToCalendar
+            context.insert(g)
+        }
+        for d in v.logs {
+            let l = GoalLog(goalID: d.goalID, date: d.date, text: d.text)
+            l.id = d.id; l.progress = d.progress; l.metricValue = d.metricValue; l.createdAt = d.createdAt
+            context.insert(l)
+        }
+        for d in v.images {
+            let i = GoalImage(id: d.id, goalID: d.goalID, fileName: d.fileName, thumbnailFileName: d.thumbnailFileName,
+                              pixelWidth: d.pixelWidth, pixelHeight: d.pixelHeight, sortOrder: d.sortOrder)
+            i.caption = d.caption; i.createdAt = d.createdAt
+            context.insert(i)
+        }
+        for d in v.dependencies {
+            let dep = GoalDependency(upstreamID: d.upstreamID, downstreamID: d.downstreamID)
+            dep.id = d.id; dep.createdAt = d.createdAt
+            context.insert(dep)
+        }
     }
 
     // MARK: Automatic backup
