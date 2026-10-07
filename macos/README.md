@@ -7,7 +7,7 @@ A native macOS goals and to-do app built around one idea: every day, pick your *
 - **Parking Lot**: type an idea, press Return. An hour later you get a notification asking where it goes.
 - **Calendar**: tasks with due dates and today's Top 3 go to a "ProTask" calendar through Calendar.app, so they work with iCloud, Google, Outlook or any account you've added there. A side panel shows today's events and free time.
 - SwiftUI, SwiftData, EventKit and UserNotifications. macOS 14 or later. No account, no server.
-- A custom design system (`Top3/Views/Theme.swift`): flat window, Inter type, greys with one muted accent, following the system light/dark setting.
+- A custom design system (`Top3/Views/Theme.swift`): flat window, one muted accent, and six styles to pick from in Settings > Appearance, each in light and dark (Midnight is dark only).
 
 ## Features at a glance
 
@@ -130,6 +130,13 @@ Click a task to select it. Double-click to edit. Right-click for every action.
 - The notification's options are **Send to Have to do**, **Send to Nice to do**, **Keep in Parking Lot** (reminds again in an hour) and **Delete**. The same actions are on each idea's row and context menu. You can also drag an idea onto a list in the sidebar or on the Today screen.
 - The menu bar icon (a checklist) lets you park an idea without opening the window. Turn it off in Settings.
 
+**Appearance (Settings > Appearance)**
+- **Mode**: System (the default), Light or Dark. Changes cross-fade and are remembered.
+- **Style**: Graphite (the original greys), Paper (warm off-white with a serif or humanist face), Midnight (navy-black, dark only), Mono (pure black and white, no accent), Sand (warm greys) and Slate (softer cool grey). Each card previews the style with your accent. A style with one mode shows only that mode.
+- **Accent**: eight muted colors for checkboxes, selection indicators, links and chart highlights. Each style has its own; Reset goes back to it.
+- The desktop widgets follow the style, accent and forced mode too.
+- Every style, mode and accent combination is held to WCAG contrast: 4.5:1 for text and links, 3:1 for hints, checkbox fills and timeline marks. `scripts/check-contrast.sh` runs as a build phase and fails the build if any pair drops below.
+
 **Calendar (two way, with the "ProTask" calendar only)**
 - Due date and time: a timed event lasting the estimate, or 30 minutes.
 - Due date only: an all-day event.
@@ -213,8 +220,10 @@ macos/
     Model/Models.swift        SwiftData models
     Logic/                    pure logic, also compiled into the tests
     Services/                 AppModel (all changes), EventKit and notification services
-    Views/                    SwiftUI views; Theme.swift holds every design token, Components.swift the custom controls
+    Shared/                   code shared with the widget; StyleTokens.swift holds every appearance style's raw values
+    Views/                    SwiftUI views; Theme.swift turns the tokens into colors, fonts and sizes, Components.swift the custom controls
     Resources/                app icon, custom icon set, accent color, Inter font
   Top3Tests/                  XCTest unit tests
-  scripts/                    package.sh (.dmg), make-icon.swift (app icon), make-icons.py (icon set), check-icons.sh
+  scripts/                    package.sh (.dmg), make-icon.swift (app icon), make-icons.py (icon set), check-icons.sh,
+                              check-contrast.sh (WCAG check for every appearance style, run during the build)
 ```

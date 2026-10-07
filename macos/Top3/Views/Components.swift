@@ -25,7 +25,8 @@ struct Checkbox: View {
     }
 }
 
-private struct CheckShape: Shape {
+/// The tick inside a checkbox.
+struct CheckShape: Shape {
     func path(in r: CGRect) -> Path {
         var p = Path()
         p.move(to: CGPoint(x: r.minX + r.width * 0.12, y: r.minY + r.height * 0.55))
@@ -398,7 +399,7 @@ struct WindowConfigurator: NSViewRepresentable {
             w.titleVisibility = .hidden
             w.titlebarSeparatorStyle = .none
             w.styleMask.insert(.fullSizeContentView)
-            w.backgroundColor = Theme.Palette.nsBackground
+            AppearanceStore.shared.register(w)
         }
     }
 }

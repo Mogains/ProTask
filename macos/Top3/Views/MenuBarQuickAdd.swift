@@ -93,8 +93,42 @@ struct SettingsView: View {
     @AppStorage(AppModel.eveningHourKey) private var eveningHour = 18
     @AppStorage(AppModel.eveningMinuteKey) private var eveningMinute = 0
     @State private var notificationStatus = "Checking…"
+    @State private var pane = Pane.general
+
+    enum Pane: String, CaseIterable {
+        case general = "General", appearance = "Appearance"
+    }
 
     var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Spacer()
+                Segments(options: Pane.allCases, selection: $pane) { $0.rawValue }
+                Spacer()
+            }
+            .padding(.bottom, Theme.Space.s)
+            Hairline().padding(.bottom, Theme.Space.s)
+            switch pane {
+            case .general: general
+            case .appearance: AppearanceSettings()
+            }
+        }
+        .font(Theme.Fonts.small)
+        .foregroundStyle(Theme.Palette.text)
+        .padding(.vertical, Theme.Space.m)
+        .frame(width: Theme.Size.settingsWidth)
+        .background(Theme.Palette.background)
+        .tint(Theme.Palette.accent)
+        .task {
+            switch await model.notifications.authorizationStatus() {
+            case .authorized, .provisional: notificationStatus = "Allowed"
+            case .denied: notificationStatus = "Off"
+            default: notificationStatus = "Not asked yet"
+            }
+        }
+    }
+
+    private var general: some View {
         VStack(alignment: .leading, spacing: 0) {
             SectionLabel(title: "General").padding(.horizontal, Theme.Space.l).frame(height: Theme.Size.row)
             row("Menu bar") {
@@ -167,19 +201,6 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(Theme.Palette.accent)
-            }
-        }
-        .font(Theme.Fonts.small)
-        .foregroundStyle(Theme.Palette.text)
-        .padding(.vertical, Theme.Space.m)
-        .frame(width: Theme.Size.settingsWidth)
-        .background(Theme.Palette.background)
-        .tint(Theme.Palette.accent)
-        .task {
-            switch await model.notifications.authorizationStatus() {
-            case .authorized, .provisional: notificationStatus = "Allowed"
-            case .denied: notificationStatus = "Off"
-            default: notificationStatus = "Not asked yet"
             }
         }
     }

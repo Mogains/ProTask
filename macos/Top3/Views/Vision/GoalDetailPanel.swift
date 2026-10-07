@@ -546,7 +546,7 @@ struct ProgressTrack: View {
             ZStack(alignment: .leading) {
                 Capsule().fill(Theme.Vision.fill(color))
                 Capsule()
-                    .fill(LinearGradient(colors: [hue.opacity(Theme.Vision.Alpha.progressHigh), hue], startPoint: .leading, endPoint: .trailing))
+                    .fill(LinearGradient(colors: [hue.opacity(Theme.Vision.Alpha.meterStart), hue], startPoint: .leading, endPoint: .trailing))
                     .frame(width: geo.size.width * min(max(fraction, 0), 1))
             }
         }

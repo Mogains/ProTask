@@ -1,40 +1,35 @@
 import AppKit
 
-/// The palette's raw values, shared by the app and the widget. Views use Theme.Palette, never these directly.
+/// Turns the appearance tokens (StyleTokens) into AppKit colors, for the app and the widget.
+/// Views use Theme.Palette, never these directly.
 enum ColorTokens {
-    typealias Pair = (light: UInt32, dark: UInt32)
-    static let background: Pair = (0xFFFFFF, 0x0F0F10)
-    static let surface: Pair = (0xF7F7F8, 0x151517)
-    static let elevated: Pair = (0xEFEFF1, 0x1B1B1E)
-    static let border: Pair = (0xE4E4E7, 0x26262A)
-    static let text: Pair = (0x18181B, 0xE6E6E8)
-    static let textSecondary: Pair = (0x71717A, 0x8A8A90)
-    static let textTertiary: Pair = (0xA1A1AA, 0x5A5A60)
-    static let accent: Pair = (0x5B6283, 0x8C93B5)
-    static let accentForeground: Pair = (0xFFFFFF, 0x0F0F10)
+    /// One token of a style as a light and dark pair. A single-variant style gives the same value for both.
+    static func pair(_ style: AppearanceStyle, _ token: KeyPath<StyleTokenSet, UInt32>) -> StylePair {
+        StylePair(AppearanceRules.tokens(style, .light)[keyPath: token], AppearanceRules.tokens(style, .dark)[keyPath: token])
+    }
 
-    // MARK: Vision timeline palette
-    // Eight low-saturation hues, keyed by TimelineColor name. Light values hold 4:1 or better on white,
-    // dark values on the near-black background. Soft fills reuse the same hue at `timelineFillAlpha`.
+    /// One alpha of a style as a light and dark pair.
+    static func alphas(_ style: AppearanceStyle, _ token: KeyPath<StyleTokenSet, Double>) -> (light: CGFloat, dark: CGFloat) {
+        (CGFloat(AppearanceRules.tokens(style, .light)[keyPath: token]), CGFloat(AppearanceRules.tokens(style, .dark)[keyPath: token]))
+    }
 
-    static let timelinePalette: [String: Pair] = [
-        "slate": (0x5F7088, 0x8F9EB3),
-        "mist": (0x4F7A7B, 0x80A8A7),
-        "sage": (0x5D7A5B, 0x8FAA8B),
-        "sand": (0x7F744A, 0xB0A47A),
-        "clay": (0x96664D, 0xC09379),
-        "rose": (0x93606B, 0xBE8C96),
-        "plum": (0x73668E, 0xA497BD),
-        "stone": (0x6F6B66, 0x9F9B95),
-    ]
-    static let timelineFillAlpha: (light: CGFloat, dark: CGFloat) = (0.15, 0.18)
-    /// A muted terracotta for the small marker on active goals past their target date.
-    static let visionOverdue: Pair = (0xA35F4C, 0xC98D79)
-    static let timelineFallback: Pair = (0x5F7088, 0x8F9EB3)
+    static func accent(_ s: AppearanceSelection) -> StylePair {
+        StylePair(AppearanceRules.accentColor(s, .light), AppearanceRules.accentColor(s, .dark))
+    }
 
-    static func timeline(_ name: String) -> Pair { timelinePalette[name] ?? timelineFallback }
+    static func accentForeground(_ s: AppearanceSelection) -> StylePair {
+        StylePair(AppearanceRules.accentForeground(s, .light), AppearanceRules.accentForeground(s, .dark))
+    }
 
-    static func color(_ p: Pair) -> NSColor { .dynamic(light: p.light, dark: p.dark) }
+    static func timeline(_ name: String) -> StylePair { StyleTokens.timelinePalette[name] ?? StyleTokens.timelineFallback }
+
+    /// A color that follows the appearance it is drawn in.
+    static func color(_ p: StylePair, alpha: (light: CGFloat, dark: CGFloat) = (1, 1)) -> NSColor {
+        .dynamic(light: p.light, dark: p.dark, lightAlpha: alpha.light, darkAlpha: alpha.dark)
+    }
+
+    /// The same pair fixed to one variant, for places that can't follow the appearance (a widget with a forced mode).
+    static func color(_ p: StylePair, fixed variant: StyleVariant) -> NSColor { NSColor(hex: p.value(variant)) }
 }
 
 extension NSColor {

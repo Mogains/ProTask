@@ -139,6 +139,7 @@ final class AppModel {
         HotKeyService.shared.onPress = { QuickCaptureController.shared.toggle() }
         HotKeyService.shared.register(HotKey.saved)
         applyAppearance()
+        AppearanceStore.shared.onChange = { [weak self] in self?.writeWidgetSnapshot() }
         resumeFocus()
         writeWidgetSnapshot()
         autoBackupIfNeeded()
@@ -713,13 +714,15 @@ final class AppModel {
         let snapshot = WidgetSnapshot(updated: Date(), day: today,
                                       items: pins.map { .init(slot: $0.topSlot ?? 0, title: $0.title, done: $0.isCompleted) }
                                           .sorted { $0.slot < $1.slot },
-                                      ideas: ideas.prefix(6).map(\.title), ideaCount: ideas.count)
+                                      ideas: ideas.prefix(6).map(\.title), ideaCount: ideas.count,
+                                      appearance: AppearanceStore.shared.selection)
         #if DEBUG
         // Screenshot runs use a throwaway store; don't overwrite the real widget file.
         if ProcessInfo.processInfo.environment["TOP3_STORE_PATH"] != nil { return }
         #endif
         guard snapshot.items != lastWidgetSnapshot?.items || snapshot.day != lastWidgetSnapshot?.day
-                || snapshot.ideas != lastWidgetSnapshot?.ideas || snapshot.ideaCount != lastWidgetSnapshot?.ideaCount else { return }
+                || snapshot.ideas != lastWidgetSnapshot?.ideas || snapshot.ideaCount != lastWidgetSnapshot?.ideaCount
+                || snapshot.appearance != lastWidgetSnapshot?.appearance else { return }
         lastWidgetSnapshot = snapshot
         snapshot.write()
         WidgetCenter.shared.reloadAllTimelines()
@@ -753,6 +756,18 @@ final class AppModel {
             r.scale = 2
             if let tiff = r.nsImage?.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
                 try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: dir).appending(path: "menubar.png"))
+            }
+        }
+        do {
+            // Settings > Appearance, in the mode the store resolved (a single-mode style overrides TOP3_APPEARANCE).
+            let scheme: ColorScheme = AppearanceStore.shared.effectiveMode == .light ? .light : .dark
+            let r = ImageRenderer(content: AppearanceSettings()
+                .font(Theme.Fonts.small).foregroundStyle(Theme.Palette.text)
+                .padding(.vertical, Theme.Space.m).frame(width: Theme.Size.settingsWidth)
+                .background(Theme.Palette.background).environment(\.colorScheme, scheme))
+            r.scale = 2
+            if let tiff = r.nsImage?.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff) {
+                try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: dir).appending(path: "settings-appearance.png"))
             }
         }
         if env["TOP3_ROUNDTRIP"] != nil {
@@ -829,7 +844,21 @@ final class AppModel {
              self.section = .list(.haveTo)
              // In memory only, so snapshots never touch real preferences.
              self.focus = RunningFocus(taskID: nil, title: "Finish quarterly report", start: Date().addingTimeInterval(-7 * 60), seconds: 25 * 60)
-         })] + visionDebugShots()
+         })] + visionDebugShots() + appearanceDebugShots()
+    }
+
+    /// Last, because they change the style: switching while the app runs (with the cross-fade) must redraw every view.
+    /// Throwaway runs never save the appearance, so this can't touch real preferences.
+    func appearanceDebugShots() -> [(String, () -> Void)] {
+        let store = AppearanceStore.shared
+        let other: AppearanceStyle = store.selection.style == .paper ? .slate : .paper
+        return [("live-style-vision", {
+                    store.setStyle(other)
+                    self.section = .vision
+                    self.selectGoal(self.allGoals().first { $0.title == "Run a half marathon" }?.id, open: true)
+                }),
+                ("live-style-today", { self.section = .today }),
+                ("live-accent-today", { store.setAccent(.rose); self.section = .today })]
     }
 
     /// Vision board states for snapshots: each zoom level, a selection, the inline prompt and the sheets.

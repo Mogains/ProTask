@@ -20,6 +20,18 @@ targets:
     platform: macOS
     sources:
       - path: Top3
+    preBuildScripts:
+      # Fails the build when any appearance style, mode and accent combination drops below WCAG contrast.
+      - name: Contrast check
+        script: ./scripts/check-contrast.sh
+        basedOnDependencyAnalysis: true
+        inputFiles:
+          - $(SRCROOT)/Top3/Shared/StyleTokens.swift
+          - $(SRCROOT)/Top3/Logic/ContrastCheck.swift
+          - $(SRCROOT)/scripts/contrast/main.swift
+          - $(SRCROOT)/scripts/check-contrast.sh
+        outputFiles:
+          - $(DERIVED_FILE_DIR)/contrast-check.stamp
     settings:
       base:
         PRODUCT_NAME: "ProTask"
@@ -83,6 +95,7 @@ targets:
     sources:
       - path: Top3Tests
       - path: Top3/Logic
+      - path: Top3/Shared/StyleTokens.swift
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.anmolbhatt.top3.tests

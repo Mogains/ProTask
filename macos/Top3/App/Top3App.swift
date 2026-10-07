@@ -9,6 +9,8 @@ struct ProTaskApp: App {
 
     init() {
         Theme.registerFonts()
+        // Before any window exists, so the first frame already has the saved mode and style.
+        AppearanceStore.shared.applyToAppKit()
         model = AppModel.shared
     }
 

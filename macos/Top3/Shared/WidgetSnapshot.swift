@@ -14,6 +14,8 @@ struct WidgetSnapshot: Codable, Equatable {
     /// Newest Parking Lot ideas (titles) and the total count. Optional so older files still decode.
     var ideas: [String]? = nil
     var ideaCount: Int? = nil
+    /// The app's style, mode, accent and font, so the widget matches. Optional so older files still decode.
+    var appearance: AppearanceSelection? = nil
 
     var doneCount: Int { items.filter(\.done).count }
 

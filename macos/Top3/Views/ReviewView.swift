@@ -64,7 +64,7 @@ struct ReviewView: View {
     }
 }
 
-/// Seven minimal grey bars.
+/// Seven minimal grey bars; the best day is highlighted in the accent.
 struct Sparkline: View {
     let values: [Int]
     let labels: [String]
@@ -76,7 +76,7 @@ struct Sparkline: View {
                 VStack(spacing: Theme.Space.xs) {
                     Text("\(values[i])").font(Theme.Fonts.caption).foregroundStyle(Theme.Palette.textTertiary)
                     RoundedRectangle(cornerRadius: Theme.Size.hairline)
-                        .fill(values[i] == 0 ? Theme.Palette.border : Theme.Palette.textTertiary)
+                        .fill(values[i] == 0 ? Theme.Palette.subtle : values[i] == top ? Theme.Palette.accent : Theme.Palette.textTertiary)
                         .frame(width: Theme.Size.sparkBar,
                                height: max(Theme.Size.hairline * 2, Theme.Size.sparkHeight * CGFloat(values[i]) / CGFloat(top)))
                     Text(labels[i]).font(Theme.Fonts.caption).foregroundStyle(Theme.Palette.textTertiary)

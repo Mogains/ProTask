@@ -7,6 +7,7 @@ cd "$(dirname "$0")/.."
 if command -v xcodegen >/dev/null; then xcodegen generate --quiet; fi
 
 ./scripts/check-icons.sh
+./scripts/check-contrast.sh
 echo "Building Release…"
 xcodebuild -project Top3.xcodeproj -scheme Top3 -configuration Release -derivedDataPath build -destination 'generic/platform=macOS' \
   CODE_SIGN_IDENTITY=- build -quiet

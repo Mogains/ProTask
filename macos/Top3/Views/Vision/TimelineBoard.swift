@@ -377,6 +377,8 @@ struct TimelineAxisView: View {
     let width: CGFloat
 
     var body: some View {
+        // The renderer reads colors and fonts as it draws; reading the palette here redraws the axis on a style change.
+        let _ = Theme.palette
         Canvas { ctx, size in
             let tier = Theme.Timeline.axisTier
             let pad = Theme.Space.xs + Theme.Space.xxs
@@ -385,7 +387,7 @@ struct TimelineAxisView: View {
                 let x = CGFloat(scale.x(tick.date))
                 let next = i + 1 < axis.major.count ? CGFloat(scale.x(axis.major[i + 1].date)) : .infinity
                 if x > 0, x < size.width {
-                    ctx.fill(Path(CGRect(x: x, y: 0, width: Theme.Size.hairline, height: size.height)), with: .color(Theme.Palette.border))
+                    ctx.fill(Path(CGRect(x: x, y: 0, width: Theme.Size.hairline, height: size.height)), with: .color(Theme.Palette.subtle))
                 }
                 let text = ctx.resolve(Text(tick.label).font(Theme.Fonts.smallMedium).foregroundStyle(Theme.Palette.textSecondary))
                 let w = text.measure(in: CGSize(width: size.width, height: tier)).width
@@ -409,7 +411,7 @@ struct TimelineAxisView: View {
                 let x = CGFloat(scale.x(tick.date))
                 if x >= 0, x <= size.width {
                     ctx.fill(Path(CGRect(x: x, y: size.height - Theme.Timeline.tickMinor, width: Theme.Size.hairline, height: Theme.Timeline.tickMinor)),
-                             with: .color(Theme.Palette.border))
+                             with: .color(Theme.Palette.subtle))
                 }
                 guard !tick.label.isEmpty else { continue }
                 let next = i + 1 < axis.minor.count ? CGFloat(scale.x(axis.minor[i + 1].date))

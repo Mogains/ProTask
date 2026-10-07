@@ -21,20 +21,45 @@ struct Top3Provider: TimelineProvider {
     }
 }
 
-private enum W {
-    static let text = Color(nsColor: ColorTokens.color(ColorTokens.text))
-    static let secondary = Color(nsColor: ColorTokens.color(ColorTokens.textSecondary))
-    static let tertiary = Color(nsColor: ColorTokens.color(ColorTokens.textTertiary))
-    static let accent = Color(nsColor: ColorTokens.color(ColorTokens.accent))
-    static let accentForeground = Color(nsColor: ColorTokens.color(ColorTokens.accentForeground))
-    static let background = Color(nsColor: ColorTokens.color(ColorTokens.background))
-    static let border = Color(nsColor: ColorTokens.color(ColorTokens.border))
-    static func font(_ size: CGFloat, _ medium: Bool = false) -> Font { .custom(medium ? "Inter-Medium" : "Inter-Regular", fixedSize: size) }
+/// The app's colors and face, from the appearance it last wrote into the snapshot.
+/// A forced mode (or a style with only one) fixes the colors to that variant; otherwise they follow the desktop.
+private struct W {
+    let text, secondary, tertiary, accent, accentForeground, background, border: Color
+    private let family: StyleFont
+
+    init(_ selection: AppearanceSelection?) {
+        let s = selection ?? .default
+        let mode = AppearanceRules.effectiveMode(s)
+        func color(_ p: StylePair) -> Color {
+            switch mode {
+            case .system: Color(nsColor: ColorTokens.color(p))
+            case .light: Color(nsColor: ColorTokens.color(p, fixed: .light))
+            case .dark: Color(nsColor: ColorTokens.color(p, fixed: .dark))
+            }
+        }
+        text = color(ColorTokens.pair(s.style, \.text))
+        secondary = color(ColorTokens.pair(s.style, \.textSecondary))
+        tertiary = color(ColorTokens.pair(s.style, \.textTertiary))
+        background = color(ColorTokens.pair(s.style, \.background))
+        border = color(ColorTokens.pair(s.style, \.border))
+        accent = color(ColorTokens.accent(s))
+        accentForeground = color(ColorTokens.accentForeground(s))
+        family = AppearanceRules.font(s)
+    }
+
+    func font(_ size: CGFloat, _ medium: Bool = false) -> Font {
+        switch family {
+        case .inter: .custom(medium ? "Inter-Medium" : "Inter-Regular", fixedSize: size)
+        case .serif: .system(size: size, weight: medium ? .medium : .regular, design: .serif)
+        case .humanist: .custom(medium ? "Seravek-Medium" : "Seravek", fixedSize: size)
+        }
+    }
 }
 
 struct Top3WidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: Top3Entry
+    private var w: W { W(entry.snapshot.appearance) }
 
     var body: some View {
         Group {
@@ -44,25 +69,26 @@ struct Top3WidgetView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Top3Column(snapshot: entry.snapshot, compact: false, showFooter: false)
                         .fixedSize(horizontal: false, vertical: true)
-                    Rectangle().fill(W.border).frame(height: 1)
+                    Rectangle().fill(w.border).frame(height: 1)
                     ParkingColumn(snapshot: entry.snapshot, limit: 6)
                 }
             } else {
                 HStack(alignment: .top, spacing: 14) {
                     Top3Column(snapshot: entry.snapshot, compact: false)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Rectangle().fill(W.border).frame(width: 1)
+                    Rectangle().fill(w.border).frame(width: 1)
                     ParkingColumn(snapshot: entry.snapshot)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
-        .containerBackground(W.background, for: .widget)
+        .containerBackground(w.background, for: .widget)
     }
 }
 
 private struct Top3Column: View {
     let snapshot: WidgetSnapshot
+    private var w: W { W(snapshot.appearance) }
     let compact: Bool
     var showFooter = true
 
@@ -70,38 +96,38 @@ private struct Top3Column: View {
         let s = snapshot
         VStack(alignment: .leading, spacing: compact ? 6 : 8) {
             HStack {
-                Text("TOP 3").font(W.font(10, true)).tracking(0.6).foregroundStyle(W.tertiary)
+                Text("TOP 3").font(w.font(10, true)).tracking(0.6).foregroundStyle(w.tertiary)
                 Spacer()
-                Text("\(s.doneCount)/3").font(W.font(10, true)).foregroundStyle(s.doneCount == 3 ? W.accent : W.tertiary)
+                Text("\(s.doneCount)/3").font(w.font(10, true)).foregroundStyle(s.doneCount == 3 ? w.accent : w.tertiary)
             }
             ForEach(1...3, id: \.self) { slot in
                 if let item = s.items.first(where: { $0.slot == slot }) {
                     HStack(spacing: 6) {
                         ZStack {
-                            Circle().strokeBorder(item.done ? W.accent : W.tertiary, lineWidth: 1)
+                            Circle().strokeBorder(item.done ? w.accent : w.tertiary, lineWidth: 1)
                             if item.done {
-                                Circle().fill(W.accent)
-                                Image("icon-done").resizable().renderingMode(.template).foregroundStyle(W.accentForeground).padding(2)
+                                Circle().fill(w.accent)
+                                Image("icon-done").resizable().renderingMode(.template).foregroundStyle(w.accentForeground).padding(2)
                             }
                         }
                         .frame(width: 12, height: 12)
                         Text(item.title)
-                            .font(W.font(compact ? 11 : 12))
-                            .foregroundStyle(item.done ? W.tertiary : W.text)
-                            .strikethrough(item.done, color: W.tertiary)
+                            .font(w.font(compact ? 11 : 12))
+                            .foregroundStyle(item.done ? w.tertiary : w.text)
+                            .strikethrough(item.done, color: w.tertiary)
                             .lineLimit(1)
                     }
                 } else {
                     HStack(spacing: 6) {
-                        Text("\(slot)").font(W.font(10)).foregroundStyle(W.tertiary).frame(width: 12)
-                        Text("Empty").font(W.font(11)).foregroundStyle(W.tertiary)
+                        Text("\(slot)").font(w.font(10)).foregroundStyle(w.tertiary).frame(width: 12)
+                        Text("Empty").font(w.font(11)).foregroundStyle(w.tertiary)
                     }
                 }
             }
             if showFooter { Spacer(minLength: 0) }
             if !compact && showFooter {
                 Text(s.items.isEmpty ? "Pick your Top 3 in ProTask" : "Updated \(s.updated.formatted(date: .omitted, time: .shortened))")
-                    .font(W.font(10)).foregroundStyle(W.tertiary)
+                    .font(w.font(10)).foregroundStyle(w.tertiary)
             }
         }
     }
@@ -110,6 +136,7 @@ private struct Top3Column: View {
 /// Newest Parking Lot ideas, so they stay in view until they're sent to a list.
 private struct ParkingColumn: View {
     let snapshot: WidgetSnapshot
+    private var w: W { W(snapshot.appearance) }
     var limit = 3
     var compact = false
 
@@ -118,24 +145,24 @@ private struct ParkingColumn: View {
         let count = snapshot.ideaCount ?? ideas.count
         VStack(alignment: .leading, spacing: compact ? 6 : 8) {
             HStack {
-                Text("PARKING LOT").font(W.font(10, true)).tracking(0.6).foregroundStyle(W.tertiary)
+                Text("PARKING LOT").font(w.font(10, true)).tracking(0.6).foregroundStyle(w.tertiary)
                 Spacer()
-                Text("\(count)").font(W.font(10, true)).foregroundStyle(W.tertiary)
+                Text("\(count)").font(w.font(10, true)).foregroundStyle(w.tertiary)
             }
             if ideas.isEmpty {
-                Text("No ideas parked").font(W.font(11)).foregroundStyle(W.tertiary)
+                Text("No ideas parked").font(w.font(11)).foregroundStyle(w.tertiary)
             } else {
                 ForEach(Array(ideas.prefix(limit).enumerated()), id: \.offset) { _, title in
                     HStack(spacing: 6) {
                         Image("icon-idea").resizable().renderingMode(.template)
-                            .foregroundStyle(W.tertiary).frame(width: 12, height: 12)
-                        Text(title).font(W.font(compact ? 11 : 12)).foregroundStyle(W.secondary).lineLimit(1)
+                            .foregroundStyle(w.tertiary).frame(width: 12, height: 12)
+                        Text(title).font(w.font(compact ? 11 : 12)).foregroundStyle(w.secondary).lineLimit(1)
                     }
                 }
             }
             Spacer(minLength: 0)
             if count > limit {
-                Text("+\(count - limit) more").font(W.font(10)).foregroundStyle(W.tertiary)
+                Text("+\(count - limit) more").font(w.font(10)).foregroundStyle(w.tertiary)
             }
         }
     }
@@ -145,10 +172,11 @@ private struct ParkingColumn: View {
 struct ParkingLotWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: Top3Entry
+    private var w: W { W(entry.snapshot.appearance) }
 
     var body: some View {
         ParkingColumn(snapshot: entry.snapshot, limit: 4, compact: family == .systemSmall)
-            .containerBackground(W.background, for: .widget)
+            .containerBackground(w.background, for: .widget)
     }
 }
 

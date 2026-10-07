@@ -78,7 +78,7 @@ struct GoalBar: View {
             shape.fill(isIdea ? Theme.Palette.background : Theme.Vision.fill(color))
             if fillWidth > 0, !isIdea {
                 Rectangle()
-                    .fill(LinearGradient(colors: [hue.opacity(Theme.Vision.Alpha.progressLow), hue.opacity(Theme.Vision.Alpha.progressHigh)],
+                    .fill(LinearGradient(colors: [Theme.Vision.progressStart(color), Theme.Vision.progressEnd(color)],
                                          startPoint: .leading, endPoint: .trailing))
                     .frame(width: fillWidth)
             }
@@ -135,12 +135,13 @@ struct GoalBar: View {
                 .padding(.horizontal, Theme.Space.s)
         } else if fit != .outside {
             HStack(spacing: Theme.Space.xs) {
-                title
+                title(onBar: true)
                 Spacer(minLength: 0)
                 if fit == .full, TimelineMetrics.showsPercent(goal) {
+                    // Primary text: the progress fill can run under it, and secondary text loses contrast there.
                     Text("\(goal.progress)%")
                         .font(Theme.Fonts.caption)
-                        .foregroundStyle(Theme.Palette.textSecondary)
+                        .foregroundStyle(Theme.Palette.text)
                         .monospacedDigit()
                         .fixedSize()
                 }
@@ -149,10 +150,13 @@ struct GoalBar: View {
         }
     }
 
-    private var title: some View {
-        Text(goal.title)
+    /// On a bar, a done goal's title stays in primary text because the full progress fill sits under it;
+    /// a dropped goal's whole bar is faded instead.
+    private func title(onBar: Bool) -> some View {
+        let muted = goal.status == .dropped || goal.status == .done && !onBar
+        return Text(goal.title)
             .font(Theme.Fonts.small)
-            .foregroundStyle(goal.status == .done || goal.status == .dropped ? Theme.Palette.textSecondary : Theme.Palette.text)
+            .foregroundStyle(muted ? Theme.Palette.textSecondary : Theme.Palette.text)
             .strikethrough(goal.status == .dropped)
             .lineLimit(1)
     }
@@ -169,7 +173,7 @@ struct GoalBar: View {
                 .accessibilityHidden(true)
         }
         if !inside {
-            title
+            title(onBar: false)
                 .fixedSize()
                 .frame(height: Theme.Timeline.bar)
                 .offset(x: x1 + Theme.Space.xs + (dot ? Theme.Timeline.overdueDot + Theme.Space.xs : 0))

@@ -5,7 +5,6 @@ import SwiftUI
 extension AppModel {
     static let sidebarKey = "showSidebar"
     static let panelKey = "showCalendarPanel"
-    static let appearanceKey = "appearance"
 
     func toggleSidebar() {
         let d = UserDefaults.standard
@@ -17,19 +16,14 @@ extension AppModel {
         d.set(!(d.object(forKey: Self.panelKey) as? Bool ?? true), forKey: Self.panelKey)
     }
 
-    /// "system", "light" or "dark".
+    /// The saved mode and style (Settings > Appearance), applied to AppKit.
     func applyAppearance() {
-        switch UserDefaults.standard.string(forKey: Self.appearanceKey) {
-        case "light": NSApp.appearance = NSAppearance(named: .aqua)
-        case "dark": NSApp.appearance = NSAppearance(named: .darkAqua)
-        default: NSApp.appearance = nil
-        }
+        AppearanceStore.shared.applyToAppKit()
     }
 
     func toggleTheme() {
-        let isDark = NSApp.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        UserDefaults.standard.set(isDark ? "light" : "dark", forKey: Self.appearanceKey)
-        applyAppearance()
+        let store = AppearanceStore.shared
+        if !store.toggleMode() { showToast("\(store.selection.style.title) has one mode only") }
     }
 
     /// Shows a task where it lives and selects it.

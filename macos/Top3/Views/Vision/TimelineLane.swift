@@ -240,7 +240,7 @@ private struct LaneProgress: View {
         ZStack(alignment: .leading) {
             Capsule().fill(Theme.Vision.fill(color))
             Capsule()
-                .fill(LinearGradient(colors: [hue.opacity(Theme.Vision.Alpha.progressHigh), hue],
+                .fill(LinearGradient(colors: [hue.opacity(Theme.Vision.Alpha.meterStart), hue],
                                      startPoint: .leading, endPoint: .trailing))
                 .frame(width: Theme.Timeline.laneProgressWidth * min(max(fraction, 0), 1))
         }
@@ -341,6 +341,8 @@ private struct LaneGrid: View {
     let scale: TimelineScale
 
     var body: some View {
+        // The renderer reads colors as it draws; reading the palette here redraws the grid when the style changes.
+        let _ = Theme.palette
         Canvas { ctx, size in
             let todayStart = Calendar.current.startOfDay(for: Date())
             let todayX = CGFloat(scale.x(todayStart))
@@ -361,7 +363,7 @@ private struct LaneGrid: View {
             for tick in axis.major {
                 let x = CGFloat(scale.x(tick.date))
                 guard x >= 0, x <= size.width else { continue }
-                ctx.fill(Path(CGRect(x: x, y: 0, width: Theme.Size.hairline, height: size.height)), with: .color(Theme.Palette.border))
+                ctx.fill(Path(CGRect(x: x, y: 0, width: Theme.Size.hairline, height: size.height)), with: .color(Theme.Palette.subtle))
             }
             let center = todayX + CGFloat(scale.pointsPerDay) / 2
             if center >= 0, center <= size.width {
@@ -389,7 +391,7 @@ private struct CollapsedMarks: View {
             for g in goals {
                 guard let span = g.span else { continue }
                 let faded = g.goal.status == .dropped || g.goal.status == .idea
-                let shade = hue.opacity(faded ? Theme.Vision.Alpha.progressLow : Theme.Vision.Alpha.laneEdge)
+                let shade = hue.opacity(faded ? Theme.Vision.Alpha.faded : Theme.Vision.Alpha.laneEdge)
                 if g.goal.isMilestone {
                     let c = TimelineMetrics.milestoneCenter(span, scale: scale)
                     let r = Theme.Timeline.collapsedMilestone / 2

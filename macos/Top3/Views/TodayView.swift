@@ -107,7 +107,7 @@ struct Top3Block: View {
                 HStack(spacing: Theme.Space.xxs) {
                     ForEach(Top3Planner.slots, id: \.self) { n in
                         Capsule()
-                            .fill(n <= done ? Theme.Palette.accent : Theme.Palette.border)
+                            .fill(n <= done ? Theme.Palette.accent : Theme.Palette.subtle)
                             .frame(width: Theme.Size.progressSegment, height: Theme.Size.indicator)
                     }
                 }
