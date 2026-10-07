@@ -6,6 +6,10 @@ ProTask is a native macOS to-do app built around a daily **Top 3**: each day you
 
 Requires macOS 14 (Sonoma) or later.
 
+![The Today screen: three Top 3 slots with one done, a follow-up, and the Have to do and Nice to do lists side by side.](docs/images/today.png)
+
+<sub>All screenshots use made-up demo data.</sub>
+
 ---
 
 ## What it does
@@ -15,12 +19,32 @@ Requires macOS 14 (Sonoma) or later.
 - **Parking Lot.** Jot down an idea and keep working. An hour later a notification asks where it belongs.
 - **Quick add from anywhere.** Press <kbd>⌥</kbd> <kbd>Space</kbd> and type something like `email prof friday 3pm !!! 30m #school`. ProTask picks up the date, priority, time estimate and tag.
 - **Two-way calendar sync.** Tasks with due dates and your Top 3 appear in a "ProTask" calendar, wherever Calendar.app shows it: iCloud, Google, Outlook. Move or rename an event there and the task follows. Delete one and the task stays, flagged on Today.
-- **Daily rhythm.** A morning planning screen, an evening wrap-up and a weekly review.
+- **Daily rhythm.** A morning planning screen (add tasks right there), an evening wrap-up and a weekly review.
+- **Long-term Vision.** Goals on timelines you can zoom from decades to months. Each goal has notes, a metric with a small graph, pictures, linked goals and tasks, and an update log. All of it stays on your Mac.
+- **Appearance.** Six styles (Graphite, Paper, Midnight, Mono, Sand, Slate), light or dark, and eight muted accents. Every combination is checked for readable contrast when the app is built.
 - **Focus timer.** 25 or 50 minutes, or your own length, on any task.
 - **Waiting On.** Track things you've handed off and get a nudge to follow up.
 - **Menu bar and widget.** See "2/3" progress in the menu bar. Desktop widgets show your Top 3 and Parking Lot.
 - **Backups.** Automatic daily backups, plus JSON and Markdown export.
 - **AI chat panel.** <kbd>⌘</kbd> <kbd>J</kbd> opens Claude, ChatGPT or Gemini beside your tasks. You sign in inside the page, and ProTask never touches your login. Copy your tasks into the chat with one click (off until you turn it on), and paste its suggestions back to approve them. [Details](macos/README.md#ai-chat-panel).
+
+## A quick look
+
+**Plan your day.** Pick today's three, add tasks as you go, and see what rolled over from yesterday.
+
+![The Plan your day screen: Top 3 slots, an Add a task field, tasks rolled over from yesterday and tasks due today.](docs/images/plan-your-day.png)
+
+**Vision.** Goals as bars on one lane per area of life, with a line for today. Click a goal to open everything about it beside the board.
+
+![The Vision timeline in dark mode: lanes for Career, Health, Finance, Projects and Life, with the Run a half marathon goal open in a side panel showing its cover picture, dates, progress and metric.](docs/images/vision.png)
+
+**Appearance.** Pick a style, a mode and an accent in Settings. Each style card previews your choice before you switch.
+
+![The six styles side by side: Graphite, Paper and Midnight on top, Mono, Sand and Slate below.](docs/images/styles.png)
+
+<p align="center">
+  <img src="docs/images/appearance-settings.png" width="440" alt="Settings, Appearance tab: a System, Light and Dark mode picker, six style cards, and a row of eight accent swatches.">
+</p>
 
 ## Install
 
