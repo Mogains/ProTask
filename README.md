@@ -4,11 +4,15 @@
 
 ProTask is a native macOS to-do app built around a daily **Top 3**: each day you pick the three tasks that matter most, and everything else waits its turn. No account, no server; your data stays on your Mac.
 
-Requires macOS 14 (Sonoma) or later.
-
 ![The Today screen: three Top 3 slots with one done, a follow-up, and the Have to do and Nice to do lists side by side.](docs/images/today.png)
 
 <sub>All screenshots use made-up demo data.</sub>
+
+## Download
+
+### [Download ProTask for Mac (.dmg)](https://github.com/Mogains/ProTask/releases/latest/download/ProTask.dmg)
+
+For macOS 14 (Sonoma) or later, on Apple silicon or Intel. The app isn't signed with a paid Apple Developer ID, so the first launch takes one extra step: see [Install](#install). Every version is on the [releases page](https://github.com/Mogains/ProTask/releases).
 
 ---
 
@@ -48,7 +52,7 @@ Requires macOS 14 (Sonoma) or later.
 
 ## Install
 
-1. Build the installer (see [Build from source](#build-from-source)), then open `macos/dist/ProTask.dmg`.
+1. [Download ProTask.dmg](https://github.com/Mogains/ProTask/releases/latest/download/ProTask.dmg) and open it. (Or build it yourself: see [Build from source](#build-from-source).)
 2. Drag **ProTask** into **Applications**.
 3. Open it. The first launch is blocked because the app isn't signed with a paid Apple Developer ID. To allow it:
    - **macOS 15 and later:** go to **System Settings → Privacy & Security**, scroll down and click **Open Anyway**.

@@ -25,6 +25,7 @@ Updated with every commit. Newest first in each section.
 
 ## Done
 
+- README: a Download section at the top and in Install, linking to the latest GitHub release's ProTask.dmg (a stable link that follows new releases). Release v1.0 is built from `356918d` (universal, macOS 14+); the DMG was checked: app, widget, icons and fonts only, no data files, home paths, emails or secrets.
 - README: screenshots of Today, Plan your day, the Vision board with a goal open, all six appearance styles and Settings > Appearance, plus feature lines for Vision and Appearance. Rendered from demo data on a throwaway store; metadata chunks stripped from the PNGs (docs/images, 1.1 MB).
 - Appearance (Settings > Appearance, a new tab beside General): Mode is System (the default), Light or Dark, and keeps the light/dark choice saved before. Style is Graphite (the original greys), Paper (warm off-white, serif or humanist face), Midnight (navy-black, dark only), Mono (pure black and white, thin lines, no accent), Sand (warm greys, clay accent) or Slate (softer cool grey, teal accent). Each card previews its style with your accent in the mode it would show in, and the mode picker only offers what the style has. Accent is one of eight muted colors for checkboxes, selection indicators, links and chart highlights (Review now marks the best day); Reset goes back to the style's own. Every style is a full token set (colors, lines, radii, face), so all views, the Vision board and goal panel, and the desktop widgets follow it. Changes cross-fade over 0.18s from a still picture of each window, so nothing flashes, and they're saved for the next launch. scripts/check-contrast.sh runs during every build and fails it if any of the 74 style, mode and accent combinations has text below 4.5:1 or hints, checkbox fills and timeline marks below 3:1. 15 new tests, 188 in total.
 - Plan your day: an "Add a task" field under the Top 3 with the same parsing as quick add (dates, !!!, 30m, #tags; "~" for Nice to do, "?" for Parking Lot). New tasks show under "Added just now" so they can go straight into the Top 3 with a click or 1, 2, 3. N jumps to the field, and Esc leaves it.
@@ -38,6 +39,7 @@ Updated with every commit. Newest first in each section.
 
 ## Known issues
 
+- The README's download link works once the v1.0 GitHub release exists. Creating it needs your OK, since it publishes a download.
 - Appearance: to pass the new contrast check, Graphite changed slightly. Secondary text is a step darker in light mode, tertiary text (section labels, counts, hints) is darker in both modes, bar titles and percentages on the Vision board use primary text, and the dark-mode progress fill on bars is lighter (0.42 instead of 0.55).
 - Appearance: tertiary text is held to 3:1, not 4.5:1. At 4.5:1 it would look the same as secondary text.
 - Appearance: the cross-fade was checked by a test run (a cover is made for each window and removed after the fade), not by eye. Its corners assume the 10pt window radius of macOS 14 and 15.
